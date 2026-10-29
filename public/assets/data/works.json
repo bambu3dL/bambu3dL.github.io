@@ -3,62 +3,181 @@
     {
       "id": "vaso-torsione",
       "date": "2026-10-12",
-      "shape": { "kind": "twistVase", "height": 1, "lobes": 6, "twist": 2.6, "radius": 0.34, "waist": 0.16 },
+      "shape": {
+        "kind": "twistVase",
+        "height": 1,
+        "lobes": 6,
+        "twist": 2.6,
+        "radius": 0.34,
+        "waist": 0.16
+      },
       "materialId": "pla-lampone",
       "estimatedG": 118,
-      "dimensionsMm": [110, 110, 220],
-      "title": { "it": "Vaso a torsione", "en": "Twist vase" },
-      "summary": { "it": "Modalità vaso: una sola parete continua che si torce mentre sale.", "en": "Vase mode: a single continuous wall that twists as it climbs." }
+      "dimensionsMm": [
+        110,
+        110,
+        220
+      ],
+      "title": {
+        "it": "Vaso a torsione",
+        "en": "Twist vase"
+      },
+      "summary": {
+        "it": "Modalità vaso: una sola parete continua che si torce mentre sale.",
+        "en": "Vase mode: a single continuous wall that twists as it climbs."
+      }
     },
     {
       "id": "nido-ape",
       "date": "2026-10-05",
-      "shape": { "kind": "honeycomb", "rings": 2, "baseHeight": 0.62, "variance": 0.38 },
+      "shape": {
+        "kind": "honeycomb",
+        "rings": 2,
+        "baseHeight": 0.62,
+        "variance": 0.38
+      },
       "materialId": "pla-girasole",
       "estimatedG": 96,
-      "dimensionsMm": [100, 100, 95],
-      "title": { "it": "Portapenne a nido d'ape", "en": "Honeycomb pen cup" },
-      "summary": { "it": "Esagoni di altezze diverse, uno accanto all'altro, per penne e pennelli.", "en": "Hexagons of different heights, side by side, for pens and brushes." }
+      "dimensionsMm": [
+        100,
+        100,
+        95
+      ],
+      "title": {
+        "it": "Portapenne a nido d'ape",
+        "en": "Honeycomb pen cup"
+      },
+      "summary": {
+        "it": "Esagoni di altezze diverse, uno accanto all'altro, per penne e pennelli.",
+        "en": "Hexagons of different heights, side by side, for pens and brushes."
+      }
     },
     {
       "id": "ruota-dentata",
       "date": "2026-09-28",
-      "shape": { "kind": "gear", "teeth": 16, "thickness": 0.28, "hole": 0.18 },
+      "shape": {
+        "kind": "gear",
+        "teeth": 16,
+        "thickness": 0.28,
+        "hole": 0.18
+      },
       "materialId": "pla-cobalto",
       "estimatedG": 64,
-      "dimensionsMm": [90, 90, 20],
-      "title": { "it": "Ruota dentata", "en": "Gear wheel" },
-      "summary": { "it": "Un pezzo funzionale: ingranaggio con foro centrale per albero da 8 mm.", "en": "A functional part: a gear with a central bore for an 8 mm shaft." }
+      "dimensionsMm": [
+        90,
+        90,
+        20
+      ],
+      "title": {
+        "it": "Ruota dentata",
+        "en": "Gear wheel"
+      },
+      "summary": {
+        "it": "Un pezzo funzionale: ingranaggio con foro centrale per albero da 8 mm.",
+        "en": "A functional part: a gear with a central bore for an 8 mm shaft."
+      }
     },
     {
       "id": "vaso-onda",
       "date": "2026-09-14",
-      "shape": { "kind": "twistVase", "height": 1, "lobes": 3, "twist": -1.2, "radius": 0.36, "waist": 0.28 },
+      "shape": {
+        "kind": "twistVase",
+        "height": 1,
+        "lobes": 3,
+        "twist": -1.2,
+        "radius": 0.36,
+        "waist": 0.28
+      },
       "materialId": "petg-turchese",
       "estimatedG": 140,
-      "dimensionsMm": [120, 120, 240],
-      "title": { "it": "Vaso a onda", "en": "Wave vase" },
-      "summary": { "it": "Tre lobi larghi che girano piano, in PETG per sopportare l'acqua.", "en": "Three broad lobes turning slowly, in PETG to cope with water." }
+      "dimensionsMm": [
+        120,
+        120,
+        240
+      ],
+      "title": {
+        "it": "Vaso a onda",
+        "en": "Wave vase"
+      },
+      "summary": {
+        "it": "Tre lobi larghi che girano piano, in PETG per sopportare l'acqua.",
+        "en": "Three broad lobes turning slowly, in PETG to cope with water."
+      }
     },
     {
       "id": "lume-spirale",
       "date": "2026-09-02",
-      "shape": { "kind": "twistVase", "height": 1, "lobes": 9, "twist": 4.2, "radius": 0.3, "waist": 0.1 },
+      "shape": {
+        "kind": "twistVase",
+        "height": 1,
+        "lobes": 9,
+        "twist": 4.2,
+        "radius": 0.3,
+        "waist": 0.1
+      },
       "materialId": "pla-confetto",
       "estimatedG": 88,
-      "dimensionsMm": [95, 95, 210],
-      "title": { "it": "Lume a spirale", "en": "Spiral lantern" },
-      "summary": { "it": "Pareti sottili che lasciano passare la luce di una candela elettrica.", "en": "Thin walls that let the light of an electric candle through." }
+      "dimensionsMm": [
+        95,
+        95,
+        210
+      ],
+      "title": {
+        "it": "Lume a spirale",
+        "en": "Spiral lantern"
+      },
+      "summary": {
+        "it": "Pareti sottili che lasciano passare la luce di una candela elettrica.",
+        "en": "Thin walls that let the light of an electric candle through."
+      }
     },
     {
       "id": "ruota-grande",
       "date": "2026-08-19",
-      "shape": { "kind": "gear", "teeth": 28, "thickness": 0.18, "hole": 0.3 },
+      "shape": {
+        "kind": "gear",
+        "teeth": 28,
+        "thickness": 0.18,
+        "hole": 0.3
+      },
       "materialId": "pla-gesso",
       "estimatedG": 72,
-      "dimensionsMm": [140, 140, 14],
-      "title": { "it": "Ruota dentata grande", "en": "Large gear wheel" },
-      "summary": { "it": "Ventotto denti, spessore sottile: per meccanismi leggeri o decorazioni.", "en": "Twenty-eight teeth, thin profile: for light mechanisms or decoration." }
+      "dimensionsMm": [
+        140,
+        140,
+        14
+      ],
+      "title": {
+        "it": "Ruota dentata grande",
+        "en": "Large gear wheel"
+      },
+      "summary": {
+        "it": "Ventotto denti, spessore sottile: per meccanismi leggeri o decorazioni.",
+        "en": "Twenty-eight teeth, thin profile: for light mechanisms or decoration."
+      }
+    },
+    {
+      "id": "escher",
+      "date": "2026-10-29",
+      "shape": {
+        "kind": "model",
+        "url": "assets/models/escher-mvu1vlos.s3dm"
+      },
+      "materialId": "pla-girasole",
+      "estimatedG": 100,
+      "dimensionsMm": [
+        23,
+        18,
+        9
+      ],
+      "title": {
+        "it": "Escher",
+        "en": "Escher"
+      },
+      "summary": {
+        "it": "Scopri il keycap “Esc – Edizione Escher”, un innovativo modello 3D progettato per tastiere meccaniche con switch standard Cherry MX. Questo esclusivo design non è solo un componente funzionale, ma una vera dichiarazione di stile. Il tasto “Esc” è reinterpretato con l'iscrizione “Escher”, un omaggio all'ironia arguta e intelligente dei celebri comici Aldo, Giovanni e Giacomo. Realizzato con precisione per garantire una perfetta installazione e una durata senza compromessi, questo keycap è pensato per chi apprezza lo stile nei dettagli e non teme di esprimere la propria personalità. Se cerchi un accessorio che fonde innovazione tecnica e un tocco di spirito anticonformista, questo modello è la scelta ideale.",
+        "en": "Introducing the “Esc – Escher Edition” keycap, a cutting-edge 3D model designed for mechanical keyboards featuring Cherry MX switches. This design isn’t just about functionality—it’s a statement piece. The “Esc” key is reimagined with the inscription \"Escher,\" paying tribute to the sharp and witty humor of the renowned comedians Aldo, Giovanni, and Giacomo. Engineered with precision to ensure a perfect fit and uncompromising durability, this keycap is meant for those who believe true style is found in the details and aren't afraid to express their individuality. If you’re looking for an accessory that fuses technical innovation with a bold, nonconformist spirit, this model is for you."
+      }
     }
   ]
 }
