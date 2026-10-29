@@ -1,14 +1,104 @@
 {
   "materials": [
-    { "id": "pla-lampone", "family": "PLA", "hex": "#e5372b", "ink": "#2a0805", "name": { "it": "Rosso lampone", "en": "Raspberry red" }, "stockG": 742, "spoolG": 1000 },
-    { "id": "pla-girasole", "family": "PLA", "hex": "#f5b50a", "ink": "#2b1f00", "name": { "it": "Giallo girasole", "en": "Sunflower yellow" }, "stockG": 515, "spoolG": 1000 },
-    { "id": "pla-cobalto", "family": "PLA", "hex": "#2159e0", "ink": "#ffffff", "name": { "it": "Blu cobalto", "en": "Cobalt blue" }, "stockG": 868, "spoolG": 1000 },
-    { "id": "pla-bottiglia", "family": "PLA", "hex": "#16805a", "ink": "#ffffff", "name": { "it": "Verde bottiglia", "en": "Bottle green" }, "stockG": 310, "spoolG": 1000 },
-    { "id": "pla-gesso", "family": "PLA", "hex": "#ebe7dc", "ink": "#25221b", "name": { "it": "Bianco gesso", "en": "Chalk white" }, "stockG": 960, "spoolG": 1000 },
-    { "id": "pla-confetto", "family": "PLA", "hex": "#f29bc0", "ink": "#3a0b20", "name": { "it": "Rosa confetto", "en": "Candy pink" }, "stockG": 184, "spoolG": 1000 },
-    { "id": "petg-turchese", "family": "PETG", "hex": "#14b5c4", "ink": "#02272b", "name": { "it": "Turchese", "en": "Turquoise" }, "stockG": 640, "spoolG": 1000 },
-    { "id": "petg-ruggine", "family": "PETG", "hex": "#cf5420", "ink": "#2b0e02", "name": { "it": "Arancio ruggine", "en": "Rust orange" }, "stockG": 421, "spoolG": 1000 },
-    { "id": "tpu-cemento", "family": "TPU", "hex": "#8d9091", "ink": "#121314", "name": { "it": "Grigio cemento", "en": "Concrete grey" }, "stockG": 255, "spoolG": 500 }
+    {
+      "id": "pla-lampone",
+      "family": "PLA",
+      "hex": "#e5372b",
+      "ink": "#2a0805",
+      "name": {
+        "it": "Rosso lampone",
+        "en": "Raspberry red"
+      },
+      "spoolG": 1000
+    },
+    {
+      "id": "pla-girasole",
+      "family": "PLA",
+      "hex": "#f5b50a",
+      "ink": "#2b1f00",
+      "name": {
+        "it": "Giallo girasole",
+        "en": "Sunflower yellow"
+      },
+      "spoolG": 1000
+    },
+    {
+      "id": "pla-cobalto",
+      "family": "PLA",
+      "hex": "#2159e0",
+      "ink": "#ffffff",
+      "name": {
+        "it": "Blu cobalto",
+        "en": "Cobalt blue"
+      },
+      "spoolG": 1000
+    },
+    {
+      "id": "pla-bottiglia",
+      "family": "PLA",
+      "hex": "#16805a",
+      "ink": "#ffffff",
+      "name": {
+        "it": "Verde bottiglia",
+        "en": "Bottle green"
+      },
+      "spoolG": 1000
+    },
+    {
+      "id": "pla-gesso",
+      "family": "PLA",
+      "hex": "#ebe7dc",
+      "ink": "#25221b",
+      "name": {
+        "it": "Bianco gesso",
+        "en": "Chalk white"
+      },
+      "spoolG": 1000
+    },
+    {
+      "id": "pla-confetto",
+      "family": "PLA",
+      "hex": "#f29bc0",
+      "ink": "#3a0b20",
+      "name": {
+        "it": "Rosa confetto",
+        "en": "Candy pink"
+      },
+      "spoolG": 1000
+    },
+    {
+      "id": "petg-turchese",
+      "family": "PETG",
+      "hex": "#14b5c4",
+      "ink": "#02272b",
+      "name": {
+        "it": "Turchese",
+        "en": "Turquoise"
+      },
+      "spoolG": 1000
+    },
+    {
+      "id": "petg-ruggine",
+      "family": "PETG",
+      "hex": "#cf5420",
+      "ink": "#2b0e02",
+      "name": {
+        "it": "Arancio ruggine",
+        "en": "Rust orange"
+      },
+      "spoolG": 1000
+    },
+    {
+      "id": "tpu-cemento",
+      "family": "TPU",
+      "hex": "#8d9091",
+      "ink": "#121314",
+      "name": {
+        "it": "Grigio cemento",
+        "en": "Concrete grey"
+      },
+      "spoolG": 500
+    }
   ],
   "families": {
     "PLA": {

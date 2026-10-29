@@ -9,7 +9,7 @@ export class StockEstimator {
       stockG,
       afterG: Math.max(0, stockG - needG),
       enough: stockG >= needG,
-      shareOfSpool: Math.min(1, needG / material.spoolG),
+      shareOfSpool: Math.min(1, needG / material.capacityG),
       shareOfStock: stockG > 0 ? Math.min(1, needG / stockG) : 1,
     };
   }

@@ -4,9 +4,10 @@ import { stockGauge } from './components/parts.js';
 
 const SECTIONS = Object.freeze([
   ['overview', '/admin'],
+  ['contacts', '/admin/contacts'],
   ['materials', '/admin/materials'],
-  ['works', '/admin/works'],
   ['stock', '/admin/stock'],
+  ['works', '/admin/works'],
   ['settings', '/admin/settings'],
 ]);
 
@@ -54,6 +55,11 @@ export function loginView({ mode, repoGuess }) {
             <p class="field-hint" id="login-token-hint">${A.login.tokenHint}</p>
           </div>
           <div class="field">
+            <label for="login-key">${A.login.contactsKey}</label>
+            <input id="login-key" name="adminKey" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="login-key-hint">
+            <p class="field-hint" id="login-key-hint">${A.login.contactsKeyHint}</p>
+          </div>
+          <div class="field">
             <label for="login-new">${A.login.newPassword}</label>
             <input id="login-new" name="passphrase" type="password" autocomplete="new-password" aria-describedby="login-new-hint">
             <p class="field-hint" id="login-new-hint">${A.login.newPasswordHint}</p>
@@ -88,7 +94,8 @@ const PUBLISH_LABEL = {
   unknown: A.overview.publish.unknown,
 };
 
-export function overviewView({ repo, publish, publishAt, counts, low }) {
+/** `contacts`: { state: 'ok' | 'notLinked', news, open } — i dati dei clienti non entrano mai qui, solo i numeri. */
+export function overviewView({ repo, publish, publishAt, counts, low, contacts }) {
   return html`
     <section class="page-head">
       <h1>${A.overview.title}</h1>
@@ -98,20 +105,29 @@ export function overviewView({ repo, publish, publishAt, counts, low }) {
     <section class="section admin-section">
       <div class="admin-cards">
         <article class="admin-card">
-          <h2>${A.overview.publish.title}</h2>
-          <p class="admin-state is-${publish}">${PUBLISH_LABEL[publish]}</p>
-          ${publishAt ? html`<p class="muted">${A.overview.publish.last}: ${publishAt}</p>` : ''}
-          <p><a href="https://github.com/${repo}/actions" target="_blank" rel="noopener" data-external>${A.overview.publish.actions}</a></p>
+          <h2>${A.overview.contacts.title}</h2>
+          ${contacts.state === 'ok' ? html`
+            <p class="admin-figure">${contacts.news}</p>
+            <p class="muted">${A.overview.contacts.news} · ${contacts.open} ${A.overview.contacts.open}</p>
+            <p><a href="/admin/contacts">${A.overview.contacts.go}</a></p>` : html`
+            <p class="muted">${A.overview.contacts.notLinked}</p>
+            <p><a href="/admin/contacts">${A.overview.contacts.link}</a></p>`}
         </article>
         <article class="admin-card">
           <h2>${A.overview.counts.materials}</h2>
           <p class="admin-figure">${counts.materials}</p>
-          <p class="muted">${A.overview.counts.stock}: ${grams(counts.stockG)}</p>
+          <p class="muted">${counts.spools} ${A.overview.counts.spools} · ${grams(counts.stockG)}</p>
         </article>
         <article class="admin-card">
           <h2>${A.overview.counts.works}</h2>
           <p class="admin-figure">${counts.works}</p>
           <p class="muted">${counts.hidden} ${A.overview.counts.hidden}</p>
+        </article>
+        <article class="admin-card">
+          <h2>${A.overview.publish.title}</h2>
+          <p class="admin-state is-${publish}">${PUBLISH_LABEL[publish]}</p>
+          ${publishAt ? html`<p class="muted">${A.overview.publish.last}: ${publishAt}</p>` : ''}
+          <p><a href="https://github.com/${repo}/actions" target="_blank" rel="noopener" data-external>${A.overview.publish.actions}</a></p>
         </article>
       </div>
     </section>
@@ -122,7 +138,7 @@ export function overviewView({ repo, publish, publishAt, counts, low }) {
         <ul class="admin-rows">
           ${low.map((item) => html`<li class="admin-row" data-hex="${safeHex(item.hex)}">
             <span class="swatch" data-hex="${safeHex(item.hex)}" aria-hidden="true"></span>
-            <span class="admin-row-main"><b>${item.label}</b><span class="muted">${A.overview.low.left.replace('{grams}', grams(item.stockG)).replace('{spool}', grams(item.spoolG))}</span></span>
+            <span class="admin-row-main"><b>${item.label}</b><span class="muted">${A.overview.low.left.replace('{grams}', grams(item.stockG)).replace('{spool}', grams(item.capacityG))}</span></span>
             ${stockGauge({ remaining: item.fraction, after: item.fraction })}
             <a class="btn btn-ghost btn-small" href="/admin/stock?material=${item.id}">${A.stock.list.adjust}</a>
           </li>`)}
@@ -132,9 +148,10 @@ export function overviewView({ repo, publish, publishAt, counts, low }) {
     <section class="section admin-section">
       <h2>${A.overview.shortcuts}</h2>
       <ul class="admin-links">
+        <li><a href="/admin/contacts">${A.overview.go.contacts}</a></li>
         <li><a href="/admin/materials">${A.overview.go.materials}</a></li>
-        <li><a href="/admin/works">${A.overview.go.works}</a></li>
         <li><a href="/admin/stock">${A.overview.go.stock}</a></li>
+        <li><a href="/admin/works">${A.overview.go.works}</a></li>
         <li><a href="/admin/settings">${A.overview.go.settings}</a></li>
         <li><a href="/">${A.overview.siteLink}</a></li>
       </ul>

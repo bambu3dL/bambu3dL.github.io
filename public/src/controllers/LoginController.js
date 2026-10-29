@@ -54,7 +54,7 @@ export class LoginController extends PrivateController {
 
   #onChange = (event) => {
     if (!event.target.matches('[data-reveal]')) return;
-    this.#form.querySelectorAll('input[name="token"], input[name="passphrase"], input[name="repeat"]').forEach((input) => {
+    this.#form.querySelectorAll('input[name="token"], input[name="adminKey"], input[name="passphrase"], input[name="repeat"]').forEach((input) => {
       input.type = event.target.checked ? 'text' : 'password';
     });
   };
@@ -92,7 +92,7 @@ export class LoginController extends PrivateController {
     submit.disabled = true;
     this.#say(A.login.working);
     try {
-      if (setup) await session.setup({ repo: get('repo'), token: get('token'), passphrase: get('passphrase') });
+      if (setup) await session.setup({ repo: get('repo'), token: get('token'), passphrase: get('passphrase'), adminKey: get('adminKey') });
       else await session.unlock(get('passphrase'));
       navigate('/admin');
     } catch (error) {

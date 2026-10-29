@@ -5,12 +5,27 @@ import { errorSlot } from './AdminViews.js';
 import { stockGauge } from './components/parts.js';
 
 const grams = (value) => `${new Intl.NumberFormat('it').format(Math.round(value))} g`;
-const fraction = (material) => Math.min(1, material.stockG / Math.max(1, material.spoolG));
+const inUse = (spool) => spool.status !== 'finished';
 export const materialLabel = (material) => `${material.family} · ${material.name.it}`;
+const spoolNumber = (spool) => spool.id.split('-').pop();
 
-/* ---------- Materiali ---------- */
+/** Residuo e capacità di un filo, sommando le sue bobine in uso (stessa regola del modello pubblico Material). */
+export function filamentStats(material, spools) {
+  const active = spools.filter((spool) => spool.materialId === material.id && inUse(spool));
+  const stockG = active.reduce((sum, spool) => sum + spool.remainingG, 0);
+  const capacity = active.reduce((sum, spool) => sum + spool.netG, 0);
+  const capacityG = capacity > 0 ? capacity : material.spoolG;
+  return { active: active.length, stockG, capacityG, fraction: Math.min(1, stockG / capacityG) };
+}
 
-export function materialsListView({ materials, families }) {
+function spoolsInUse(count) {
+  const texts = A.materials.spoolsInUse;
+  return (count === 0 ? texts.zero : count === 1 ? texts.one : texts.other).replace('{n}', count);
+}
+
+/* ---------- Fili ---------- */
+
+export function materialsListView({ materials, families, spools }) {
   return html`
     <section class="page-head">
       <h1>${A.materials.title}</h1>
@@ -21,12 +36,18 @@ export function materialsListView({ materials, families }) {
     <section class="section admin-section">
       ${materials.length === 0 ? html`<p class="muted">${A.common.noItems}</p>` : html`
         <ul class="admin-rows">
-          ${materials.map((material) => html`<li class="admin-row" data-hex="${safeHex(material.hex)}">
-            <span class="swatch" data-hex="${safeHex(material.hex)}" aria-hidden="true"></span>
-            <span class="admin-row-main"><b>${materialLabel(material)}</b><span class="muted">${A.materials.stock}: ${grams(material.stockG)} / ${grams(material.spoolG)}</span></span>
-            ${stockGauge({ remaining: fraction(material), after: fraction(material) })}
-            <a class="btn btn-ghost btn-small" href="/admin/materials/${material.id}">${A.common.edit}</a>
-          </li>`)}
+          ${materials.map((material) => {
+            const stats = filamentStats(material, spools);
+            return html`<li class="admin-row" data-hex="${safeHex(material.hex)}">
+              <span class="swatch" data-hex="${safeHex(material.hex)}" aria-hidden="true"></span>
+              <span class="admin-row-main">
+                <b>${materialLabel(material)}</b>
+                <span class="muted">${material.brand ? `${material.brand} · ` : ''}${spoolsInUse(stats.active)} · ${grams(stats.stockG)} / ${grams(stats.capacityG)}</span>
+              </span>
+              ${stockGauge({ remaining: stats.fraction, after: stats.fraction })}
+              <a class="btn btn-ghost btn-small" href="/admin/materials/${material.id}">${A.common.edit}</a>
+            </li>`;
+          })}
         </ul>`}
     </section>
 
@@ -64,9 +85,10 @@ export function materialsListView({ materials, families }) {
     </section>`;
 }
 
-export function materialFormView({ material, families }) {
+export function materialFormView({ material, families, spools }) {
   const editing = material !== null;
-  const value = material ?? { family: Object.keys(families)[0] ?? '', name: { it: '', en: '' }, hex: '#e5372b', stockG: 1000, spoolG: 1000 };
+  const value = material ?? { family: Object.keys(families)[0] ?? '', name: { it: '', en: '' }, brand: '', hex: '#e5372b', spoolG: 1000 };
+  const stats = editing ? filamentStats(material, spools) : null;
   return html`
     <section class="page-head">
       <a class="back-link" href="/admin/materials">${A.materials.form.back}</a>
@@ -92,6 +114,11 @@ export function materialFormView({ material, families }) {
             <input id="m-name-en" name="nameEn" type="text" value="${value.name.en ?? ''}">
           </div>
         </div>
+        <div class="field">
+          <label for="m-brand">${A.materials.form.brand} (${A.common.optional})</label>
+          <input id="m-brand" name="brand" type="text" maxlength="40" value="${value.brand ?? ''}" aria-describedby="brand-error">
+          ${errorSlot('brand')}
+        </div>
         <div class="field-row">
           <div class="field">
             <label for="m-hex">${A.materials.form.hex}</label>
@@ -105,11 +132,12 @@ export function materialFormView({ material, families }) {
           </div>
         </div>
         ${editing ? html`
-          <p class="admin-fixed"><b>${A.materials.form.stockFixed}:</b> ${grams(value.stockG)}. <span class="muted">${A.materials.form.stockNote}</span></p>` : html`
+          <p class="admin-fixed"><b>${A.materials.form.currentStock}:</b> ${grams(stats.stockG)} · ${spoolsInUse(stats.active)}. <span class="muted">${A.materials.form.stockNote}</span> <a href="/admin/stock?material=${material.id}">${A.nav.stock}</a></p>` : html`
           <div class="field">
-            <label for="m-stock">${A.materials.form.stock}</label>
-            <input id="m-stock" name="stockG" type="number" min="0" max="100000" step="1" inputmode="numeric" value="${value.stockG}" aria-describedby="stockG-error">
-            ${errorSlot('stockG')}
+            <label for="m-initial">${A.materials.form.initialSpools}</label>
+            <input id="m-initial" name="initialSpools" type="number" min="0" max="10" step="1" inputmode="numeric" value="1" aria-describedby="m-initial-hint initialSpools-error">
+            <p class="field-hint" id="m-initial-hint">${A.materials.form.initialSpoolsHint}</p>
+            ${errorSlot('initialSpools')}
           </div>`}
         <div class="form-actions form-actions-row">
           <button class="btn btn-primary" type="submit" data-submit>${A.common.save}</button>
@@ -120,7 +148,7 @@ export function materialFormView({ material, families }) {
     </section>`;
 }
 
-/* ---------- Opere ---------- */
+/* ---------- Oggetti ---------- */
 
 export function worksListView({ works, materialsById }) {
   return html`
@@ -250,11 +278,17 @@ export function workFormView({ work, materials, today }) {
     </section>`;
 }
 
-/* ---------- Magazzino ---------- */
+/* ---------- Bobine ---------- */
 
-export function stockView({ materials, works, log, picked }) {
-  const when = (iso) => new Date(iso).toLocaleString('it', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const when = (iso) => new Date(iso).toLocaleString('it', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+export function stockView({ materials, spools, works, log, pickedSpool }) {
   const byId = new Map(materials.map((material) => [material.id, material]));
+  const spoolText = (spool) => `${A.stock.list.spool.replace('{n}', spoolNumber(spool))}`;
+  const spoolOption = (spool) => {
+    const material = byId.get(spool.materialId);
+    return html`<option value="${spool.id}" ${spool.id === pickedSpool ? 'selected' : ''}>${material ? materialLabel(material) : spool.materialId} · ${spoolText(spool)} — ${grams(spool.remainingG)}${inUse(spool) ? '' : ` (${A.stock.list.finished})`}</option>`;
+  };
   return html`
     <section class="page-head">
       <h1>${A.stock.title}</h1>
@@ -265,61 +299,105 @@ export function stockView({ materials, works, log, picked }) {
       <form class="admin-form" data-printed-form novalidate>
         <h2>${A.stock.printed.title}</h2>
         <p class="muted">${A.stock.printed.lead}</p>
-        <div class="field">
-          <label for="p-work">${A.stock.printed.work}</label>
-          <select id="p-work" name="workId" aria-describedby="workId-error">
-            ${works.map((work) => html`<option value="${work.id}" data-grams="${work.estimatedG}" data-material="${work.materialId}">${work.title.it}</option>`)}
-          </select>
-          ${errorSlot('workId')}
-        </div>
-        <div class="field">
-          <label for="p-copies">${A.stock.printed.copies}</label>
-          <input id="p-copies" name="copies" type="number" min="1" max="100" step="1" value="1" inputmode="numeric">
-        </div>
-        <p class="admin-fixed" data-printed-preview aria-live="polite"></p>
-        <div class="form-actions"><button class="btn btn-primary" type="submit" data-submit ${works.length ? '' : 'disabled'}>${A.stock.printed.submit}</button></div>
+        ${works.length === 0 ? html`<p class="muted">${A.stock.printed.none}</p>` : html`
+          <div class="field">
+            <label for="p-work">${A.stock.printed.work}</label>
+            <select id="p-work" name="workId" aria-describedby="workId-error">
+              ${works.map((work) => html`<option value="${work.id}" data-grams="${work.estimatedG}" data-material="${work.materialId}">${work.title.it}</option>`)}
+            </select>
+            ${errorSlot('workId')}
+          </div>
+          <div class="field">
+            <label for="p-copies">${A.stock.printed.copies}</label>
+            <input id="p-copies" name="copies" type="number" min="1" max="100" step="1" value="1" inputmode="numeric">
+          </div>
+          <p class="admin-fixed" data-printed-preview aria-live="polite"></p>
+          <div class="form-actions"><button class="btn btn-primary" type="submit" data-submit>${A.stock.printed.submit}</button></div>`}
       </form>
 
-      <form class="admin-form" data-move-form novalidate>
-        <h2>${A.stock.move.title}</h2>
-        <div class="field">
-          <label for="mv-material">${A.stock.move.material}</label>
-          <select id="mv-material" name="materialId" aria-describedby="materialId-error">
-            ${materials.map((material) => html`<option value="${material.id}" ${material.id === picked ? 'selected' : ''}>${materialLabel(material)} — ${grams(material.stockG)}</option>`)}
-          </select>
-          ${errorSlot('materialId')}
-        </div>
-        <div class="field">
-          <label for="mv-mode">${A.stock.move.mode}</label>
-          <select id="mv-mode" name="mode" aria-describedby="mode-error">
-            ${Object.entries(A.stock.move.modes).map(([key, label]) => html`<option value="${key}">${label}</option>`)}
-          </select>
-          ${errorSlot('mode')}
-        </div>
-        <div class="field">
-          <label for="mv-grams">${A.stock.move.grams}</label>
-          <input id="mv-grams" name="grams" type="number" min="0" max="100000" step="1" inputmode="numeric" aria-describedby="grams-error">
-          ${errorSlot('grams')}
-        </div>
-        <div class="field">
-          <label for="mv-reason">${A.stock.move.reason} (${A.common.optional})</label>
-          <input id="mv-reason" name="reason" type="text" maxlength="120" aria-describedby="mv-reason-hint">
-          <p class="field-hint" id="mv-reason-hint">${A.stock.move.reasonHint}</p>
-        </div>
-        <div class="form-actions"><button class="btn btn-primary" type="submit" data-submit>${A.stock.move.submit}</button></div>
+      <form class="admin-form" data-add-spool-form novalidate>
+        <h2>${A.stock.add.title}</h2>
+        ${materials.length === 0 ? html`<p class="muted">${A.stock.add.none}</p>` : html`
+          <div class="field">
+            <label for="a-material">${A.stock.add.material}</label>
+            <select id="a-material" name="materialId" aria-describedby="materialId-error">
+              ${materials.map((material) => html`<option value="${material.id}" data-spool="${material.spoolG}">${materialLabel(material)}</option>`)}
+            </select>
+            ${errorSlot('materialId')}
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="a-net">${A.stock.add.net}</label>
+              <input id="a-net" name="netG" type="number" min="1" max="20000" step="1" inputmode="numeric" value="${materials[0].spoolG}" aria-describedby="netG-error">
+              ${errorSlot('netG')}
+            </div>
+            <div class="field">
+              <label for="a-left">${A.stock.add.left} (${A.common.optional})</label>
+              <input id="a-left" name="remainingG" type="number" min="0" max="20000" step="1" inputmode="numeric" aria-describedby="a-left-hint remainingG-error">
+              <p class="field-hint" id="a-left-hint">${A.stock.add.leftHint}</p>
+              ${errorSlot('remainingG')}
+            </div>
+          </div>
+          <div class="form-actions"><button class="btn btn-primary" type="submit" data-submit>${A.stock.add.submit}</button></div>`}
       </form>
     </section>
 
     <section class="section admin-section">
       <h2>${A.stock.list.title}</h2>
-      <ul class="admin-rows">
-        ${materials.map((material) => html`<li class="admin-row" data-hex="${safeHex(material.hex)}">
-          <span class="swatch" data-hex="${safeHex(material.hex)}" aria-hidden="true"></span>
-          <span class="admin-row-main"><b>${materialLabel(material)}</b><span class="muted">${grams(material.stockG)} / ${grams(material.spoolG)}</span></span>
-          ${stockGauge({ remaining: fraction(material), after: fraction(material) })}
-          <button class="btn btn-ghost btn-small" type="button" data-pick="${material.id}">${A.stock.list.adjust}</button>
-        </li>`)}
-      </ul>
+      ${materials.map((material) => {
+        const own = spools.filter((spool) => spool.materialId === material.id);
+        const stats = filamentStats(material, spools);
+        return html`<div class="spool-group" data-hex="${safeHex(material.hex)}">
+          <div class="spool-group-head">
+            <span class="swatch" data-hex="${safeHex(material.hex)}" aria-hidden="true"></span>
+            <b>${materialLabel(material)}</b>
+            <span class="muted">${grams(stats.stockG)} · ${spoolsInUse(stats.active)}</span>
+          </div>
+          ${own.length === 0 ? html`<p class="muted spool-none">${A.stock.list.none}</p>` : html`
+            <ul class="admin-rows">
+              ${own.map((spool) => html`<li class="admin-row ${inUse(spool) ? '' : 'is-finished'}" data-hex="${safeHex(material.hex)}">
+                <span class="admin-status ${inUse(spool) ? 'is-printing' : 'is-closed'}">${inUse(spool) ? A.stock.list.inUse : A.stock.list.finished}</span>
+                <span class="admin-row-main"><b>${spoolText(spool)}</b><span class="muted">${grams(spool.remainingG)} / ${grams(spool.netG)} · ${spool.addedAt}</span></span>
+                ${stockGauge({ remaining: Math.min(1, spool.remainingG / Math.max(1, spool.netG)), after: Math.min(1, spool.remainingG / Math.max(1, spool.netG)) })}
+                <span class="admin-row-actions">
+                  <button class="btn btn-ghost btn-small" type="button" data-pick="${spool.id}">${A.stock.list.adjust}</button>
+                  <button class="btn btn-ghost btn-small" type="button" data-spool-status="${spool.id}" data-to="${inUse(spool) ? 'finished' : 'active'}">${inUse(spool) ? A.stock.list.finish : A.stock.list.reopen}</button>
+                  <button class="btn btn-ghost btn-small" type="button" data-spool-delete="${spool.id}">${A.stock.list.delete}</button>
+                </span>
+              </li>`)}
+            </ul>`}
+        </div>`;
+      })}
+    </section>
+
+    <section class="section admin-section">
+      <form class="admin-form" data-move-form novalidate>
+        <h2>${A.stock.move.title}</h2>
+        ${spools.length === 0 ? html`<p class="muted">${A.stock.list.none}</p>` : html`
+          <div class="field">
+            <label for="mv-spool">${A.stock.move.spool}</label>
+            <select id="mv-spool" name="spoolId" aria-describedby="spoolId-error">${spools.map(spoolOption)}</select>
+            ${errorSlot('spoolId')}
+          </div>
+          <div class="field">
+            <label for="mv-mode">${A.stock.move.mode}</label>
+            <select id="mv-mode" name="mode" aria-describedby="mode-error">
+              ${Object.entries(A.stock.move.modes).map(([key, label]) => html`<option value="${key}">${label}</option>`)}
+            </select>
+            ${errorSlot('mode')}
+          </div>
+          <div class="field">
+            <label for="mv-grams">${A.stock.move.grams}</label>
+            <input id="mv-grams" name="grams" type="number" min="0" max="100000" step="1" inputmode="numeric" aria-describedby="grams-error">
+            ${errorSlot('grams')}
+          </div>
+          <div class="field">
+            <label for="mv-reason">${A.stock.move.reason} (${A.common.optional})</label>
+            <input id="mv-reason" name="reason" type="text" maxlength="120" aria-describedby="mv-reason-hint">
+            <p class="field-hint" id="mv-reason-hint">${A.stock.move.reasonHint}</p>
+          </div>
+          <div class="form-actions"><button class="btn btn-primary" type="submit" data-submit>${A.stock.move.submit}</button></div>`}
+      </form>
     </section>
 
     <section class="section admin-section">
@@ -330,7 +408,7 @@ export function stockView({ materials, works, log, picked }) {
             const material = byId.get(entry.materialId);
             return html`<li>
               <span class="muted">${when(entry.at)}</span>
-              <b>${material ? materialLabel(material) : entry.materialId}</b>
+              <b>${material ? materialLabel(material) : entry.materialId}${entry.spoolId ? ` · ${A.stock.list.spool.replace('{n}', entry.spoolId.split('-').pop())}` : ''}</b>
               <span>${grams(entry.before)} → ${grams(entry.after)}</span>
               ${entry.reason ? html`<span class="muted">${entry.reason}</span>` : ''}
             </li>`;

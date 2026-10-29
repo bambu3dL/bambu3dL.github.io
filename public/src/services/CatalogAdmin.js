@@ -4,11 +4,14 @@ import {
   checkFamily,
   checkMaterial,
   checkSettings,
+  checkSpool,
   checkStockChange,
   checkWork,
   materialRecord,
+  newSpool,
   settingsRecord,
   slugify,
+  spoolRecord,
   uniqueId,
   workRecord,
 } from '../models/AdminRules.js';
@@ -16,14 +19,23 @@ import {
 // Contenuti del sito che l'area riservata può cambiare. Sono file JSON nel repository: questo servizio li legge,
 // li modifica e li riscrive tramite il ContentGateway che riceve (non sa che dietro c'è GitHub).
 // Ogni scrittura rilegge il file un istante prima, così non cancella modifiche fatte nel frattempo da altrove.
+//
+// Un FILO è una voce del catalogo (famiglia, colore, marca); una BOBINA è un pezzo fisico di quel filo con i suoi
+// grammi residui. Un filo può avere più bobine; il residuo del filo è la somma di quelle in uso.
 
 const FILES = Object.freeze({
   materials: 'assets/data/materials.json',
+  spools: 'assets/data/spools.json',
   works: 'assets/data/works.json',
   site: 'assets/data/site.json',
   log: 'assets/data/stock-log.json',
 });
 const MAX_LOG_ENTRIES = 300;
+const today = () => new Date().toISOString().slice(0, 10);
+
+/** Le bobine in uso di un filo, dalla più vecchia: si consumano in quest'ordine. */
+const oldestFirst = (a, b) => String(a.addedAt).localeCompare(String(b.addedAt)) || a.id.localeCompare(b.id, 'it', { numeric: true });
+const inUse = (spool) => spool.status !== 'finished';
 
 export class CatalogAdmin {
   #gateway;
@@ -35,8 +47,8 @@ export class CatalogAdmin {
   /* ---------- Lettura ---------- */
 
   async materials() {
-    const { data } = await this.#materialsFile();
-    return { materials: data.materials, families: data.families };
+    const [{ data }, { data: spoolData }] = await Promise.all([this.#materialsFile(), this.#spoolsFile()]);
+    return { materials: data.materials, families: data.families, spools: spoolData.spools };
   }
 
   async works() {
@@ -57,21 +69,33 @@ export class CatalogAdmin {
     return this.#gateway.latestPublish();
   }
 
-  /* ---------- Materiali e famiglie ---------- */
+  /* ---------- Fili e famiglie ---------- */
 
+  /** Alla creazione, `initialSpools` bobine nuove e piene vengono aggiunte da sole. */
   async saveMaterial(input, { id = null } = {}) {
     const { data, sha } = await this.#materialsFile();
-    const errors = checkMaterial(input, { families: data.families });
+    const errors = checkMaterial(input, { families: data.families, creating: !id });
     if (Object.keys(errors).length) throw new ValidationError(errors);
 
     const index = id ? data.materials.findIndex((item) => item.id === id) : -1;
     if (id && index < 0) throw new ValidationError({ id: 'missing' });
     const recordId = id ?? uniqueId(slugify(`${input.family}-${input.nameIt}`), new Set(data.materials.map((item) => item.id)));
-    // Il residuo cambia solo da Magazzino, così ogni variazione lascia traccia: qui si fissa solo alla creazione.
-    const record = materialRecord(index >= 0 ? { ...input, stockG: data.materials[index].stockG } : input, recordId);
+    const record = materialRecord(input, recordId);
     if (index >= 0) data.materials[index] = record;
     else data.materials.push(record);
-    await this.#gateway.writeJson(FILES.materials, data, { sha, message: `Admin: ${index >= 0 ? 'aggiorna' : 'aggiungi'} il materiale ${record.family} ${record.name.it}` });
+    await this.#gateway.writeJson(FILES.materials, data, { sha, message: `Admin: ${index >= 0 ? 'aggiorna' : 'aggiungi'} il filo ${record.family} ${record.name.it}` });
+
+    const count = index >= 0 ? 0 : Math.round(Number(input.initialSpools));
+    if (count > 0) {
+      const { data: spoolData, sha: spoolSha } = await this.#spoolsFile();
+      const taken = new Set(spoolData.spools.map((spool) => spool.id));
+      for (let k = 0; k < count; k += 1) {
+        const spoolId = uniqueId(`${recordId}-${spoolData.spools.filter((spool) => spool.materialId === recordId).length + 1}`, taken);
+        taken.add(spoolId);
+        spoolData.spools.push(newSpool(recordId, record.spoolG, spoolId, today()));
+      }
+      await this.#gateway.writeJson(FILES.spools, spoolData, { sha: spoolSha, message: `Admin: ${count === 1 ? 'una bobina nuova' : `${count} bobine nuove`} di ${record.family} ${record.name.it}` });
+    }
     return record;
   }
 
@@ -81,8 +105,16 @@ export class CatalogAdmin {
     if (!material) throw new ValidationError({ id: 'missing' });
     const users = (await this.#worksFile()).data.works.filter((work) => work.materialId === id);
     if (users.length) throw new ValidationError({ id: 'inUse' }, { works: users.map((work) => work.title.it) });
+    const { data: spoolData, sha: spoolSha } = await this.#spoolsFile();
+    const own = spoolData.spools.filter((spool) => spool.materialId === id);
+    if (own.some(inUse)) throw new ValidationError({ id: 'hasSpools' });
+
     data.materials = data.materials.filter((item) => item.id !== id);
-    await this.#gateway.writeJson(FILES.materials, data, { sha, message: `Admin: elimina il materiale ${material.family} ${material.name.it}` });
+    await this.#gateway.writeJson(FILES.materials, data, { sha, message: `Admin: elimina il filo ${material.family} ${material.name.it}` });
+    if (own.length) {
+      spoolData.spools = spoolData.spools.filter((spool) => spool.materialId !== id);
+      await this.#gateway.writeJson(FILES.spools, spoolData, { sha: spoolSha, message: `Admin: elimina le bobine finite di ${material.family} ${material.name.it}` });
+    }
   }
 
   async saveFamily(input) {
@@ -103,7 +135,7 @@ export class CatalogAdmin {
     await this.#gateway.writeJson(FILES.materials, data, { sha, message: `Admin: elimina la famiglia ${code}` });
   }
 
-  /* ---------- Opere ---------- */
+  /* ---------- Oggetti (le opere in vetrina) ---------- */
 
   /** `photo` è { base64 } di un JPEG già ridimensionato; `removePhoto` toglie quella esistente. */
   async saveWork(input, { id = null, photo = null, removePhoto = false } = {}) {
@@ -125,7 +157,7 @@ export class CatalogAdmin {
     const record = workRecord(input, recordId, { photo: photoPath });
     if (index >= 0) data.works[index] = record;
     else data.works.push(record);
-    await this.#gateway.writeJson(FILES.works, data, { sha, message: `Admin: ${index >= 0 ? 'aggiorna' : 'aggiungi'} l’opera ${record.title.it}` });
+    await this.#gateway.writeJson(FILES.works, data, { sha, message: `Admin: ${index >= 0 ? 'aggiorna' : 'aggiungi'} l’oggetto ${record.title.it}` });
 
     if (previous && previous !== photoPath) await this.#removeQuietly(previous, `Admin: toglie la vecchia foto di ${record.title.it}`);
     return record;
@@ -136,35 +168,102 @@ export class CatalogAdmin {
     const work = data.works.find((item) => item.id === id);
     if (!work) throw new ValidationError({ id: 'missing' });
     data.works = data.works.filter((item) => item.id !== id);
-    await this.#gateway.writeJson(FILES.works, data, { sha, message: `Admin: elimina l’opera ${work.title.it}` });
+    await this.#gateway.writeJson(FILES.works, data, { sha, message: `Admin: elimina l’oggetto ${work.title.it}` });
     if (work.photo) await this.#removeQuietly(work.photo, `Admin: toglie la foto di ${work.title.it}`);
   }
 
-  /* ---------- Magazzino ---------- */
+  /* ---------- Bobine ---------- */
 
-  /** mode: 'set' (il residuo diventa questo valore), 'add' (arriva filamento), 'subtract' (se n'è usato). */
-  async adjustStock({ materialId, mode, grams, reason = '' }) {
-    const errors = checkStockChange({ mode, grams });
+  /** Una bobina nuova. `remainingG` vale `netG` se non lo dici (bobina piena). */
+  async addSpool({ materialId, netG, remainingG }) {
+    const { data: materialData } = await this.#materialsFile();
+    const input = { materialId, netG, remainingG: remainingG === undefined || remainingG === '' ? netG : remainingG };
+    const errors = checkSpool(input, { materialIds: new Set(materialData.materials.map((item) => item.id)) });
     if (Object.keys(errors).length) throw new ValidationError(errors);
-    const { data, sha } = await this.#materialsFile();
-    const material = data.materials.find((item) => item.id === materialId);
-    if (!material) throw new ValidationError({ materialId: 'missing' });
 
-    const before = material.stockG;
-    material.stockG = applyStockChange(before, { mode, grams });
-    await this.#gateway.writeJson(FILES.materials, data, { sha, message: `Admin: magazzino ${material.family} ${material.name.it}, da ${before} g a ${material.stockG} g` });
-    await this.#appendLog({ at: new Date().toISOString(), materialId, before, after: material.stockG, reason: String(reason).trim().slice(0, 120) });
-    return { before, after: material.stockG };
+    const { data, sha } = await this.#spoolsFile();
+    const id = uniqueId(`${materialId}-${data.spools.filter((spool) => spool.materialId === materialId).length + 1}`, new Set(data.spools.map((spool) => spool.id)));
+    const record = spoolRecord(input, id, today());
+    if (record.remainingG === 0) record.status = 'finished';
+    data.spools.push(record);
+    await this.#gateway.writeJson(FILES.spools, data, { sha, message: `Admin: bobina nuova ${id} (${record.remainingG} g)` });
+    await this.#appendLog([{ at: new Date().toISOString(), materialId, spoolId: id, before: 0, after: record.remainingG, reason: 'Bobina nuova' }]);
+    return record;
   }
 
-  /** Scala dal magazzino il filamento stimato di un'opera stampata `copies` volte. */
+  /** mode: 'set' (il residuo diventa questo valore), 'add' (se ne aggiunge), 'subtract' (se n'è usato). */
+  async adjustSpool({ spoolId, mode, grams, reason = '' }) {
+    const errors = checkStockChange({ mode, grams });
+    if (Object.keys(errors).length) throw new ValidationError(errors);
+    const { data, sha } = await this.#spoolsFile();
+    const spool = data.spools.find((item) => item.id === spoolId);
+    if (!spool) throw new ValidationError({ spoolId: 'missing' });
+
+    const before = spool.remainingG;
+    spool.remainingG = applyStockChange(before, { mode, grams });
+    spool.status = spool.remainingG > 0 ? 'active' : 'finished'; // a zero la bobina è finita; con grammi in più si riapre
+    await this.#gateway.writeJson(FILES.spools, data, { sha, message: `Admin: bobina ${spoolId}, da ${before} g a ${spool.remainingG} g` });
+    await this.#appendLog([{ at: new Date().toISOString(), materialId: spool.materialId, spoolId, before, after: spool.remainingG, reason: String(reason).trim().slice(0, 120) }]);
+    return { before, after: spool.remainingG };
+  }
+
+  /** Chiude una bobina anche se ci sono ancora grammi (un avanzo che non userai) o la riapre. */
+  async setSpoolStatus(spoolId, status) {
+    if (!['active', 'finished'].includes(status)) throw new ValidationError({ status: 'mode' });
+    const { data, sha } = await this.#spoolsFile();
+    const spool = data.spools.find((item) => item.id === spoolId);
+    if (!spool) throw new ValidationError({ spoolId: 'missing' });
+    spool.status = status;
+    await this.#gateway.writeJson(FILES.spools, data, { sha, message: `Admin: bobina ${spoolId} ${status === 'finished' ? 'finita' : 'riaperta'}` });
+    await this.#appendLog([{ at: new Date().toISOString(), materialId: spool.materialId, spoolId, before: spool.remainingG, after: spool.remainingG, reason: status === 'finished' ? 'Bobina finita' : 'Bobina riaperta' }]);
+  }
+
+  async deleteSpool(spoolId) {
+    const { data, sha } = await this.#spoolsFile();
+    const spool = data.spools.find((item) => item.id === spoolId);
+    if (!spool) throw new ValidationError({ spoolId: 'missing' });
+    data.spools = data.spools.filter((item) => item.id !== spoolId);
+    await this.#gateway.writeJson(FILES.spools, data, { sha, message: `Admin: elimina la bobina ${spoolId}` });
+  }
+
+  /**
+   * Toglie `grams` da un filo, partendo dalla bobina in uso più vecchia e passando alla successiva quando si svuota.
+   * Se non basta, toglie quel che c'è e dice quanto è mancato (`shortfallG`).
+   */
+  async consume({ materialId, grams, reason = '' }) {
+    const errors = checkStockChange({ mode: 'subtract', grams });
+    if (Object.keys(errors).length) throw new ValidationError(errors);
+    const { data, sha } = await this.#spoolsFile();
+    const own = data.spools.filter((spool) => spool.materialId === materialId);
+    if (!own.length && !(await this.#materialsFile()).data.materials.some((item) => item.id === materialId)) throw new ValidationError({ materialId: 'missing' });
+
+    const beforeG = own.filter(inUse).reduce((sum, spool) => sum + spool.remainingG, 0);
+    let left = Math.round(Number(grams));
+    const parts = [];
+    for (const spool of own.filter(inUse).filter((item) => item.remainingG > 0).sort(oldestFirst)) {
+      if (left <= 0) break;
+      const taken = Math.min(spool.remainingG, left);
+      parts.push({ spoolId: spool.id, before: spool.remainingG, after: spool.remainingG - taken, taken });
+      spool.remainingG -= taken;
+      if (spool.remainingG === 0) spool.status = 'finished';
+      left -= taken;
+    }
+    const takenG = parts.reduce((sum, part) => sum + part.taken, 0);
+    if (parts.length) {
+      await this.#gateway.writeJson(FILES.spools, data, { sha, message: `Admin: consumo di ${takenG} g di ${materialId}` });
+      const at = new Date().toISOString();
+      await this.#appendLog(parts.map((part) => ({ at, materialId, spoolId: part.spoolId, before: part.before, after: part.after, reason: String(reason).trim().slice(0, 120) })));
+    }
+    return { requestedG: Math.round(Number(grams)), takenG, shortfallG: left, beforeG, afterG: beforeG - takenG, parts };
+  }
+
+  /** Scala dal magazzino il filamento stimato di un oggetto stampato `copies` volte. */
   async consumeForWork({ workId, copies = 1 }) {
     const work = (await this.#worksFile()).data.works.find((item) => item.id === workId);
     if (!work) throw new ValidationError({ workId: 'missing' });
     const count = Math.max(1, Math.min(100, Math.floor(Number(copies)) || 1));
-    return this.adjustStock({
+    return this.consume({
       materialId: work.materialId,
-      mode: 'subtract',
       grams: work.estimatedG * count,
       reason: `Stampa: ${work.title.it}${count > 1 ? ` × ${count}` : ''}`,
     });
@@ -186,18 +285,23 @@ export class CatalogAdmin {
     return { data: { materials: [], families: {}, ...data }, sha };
   }
 
+  async #spoolsFile() {
+    const { data, sha } = await this.#gateway.readJson(FILES.spools);
+    return { data: { spools: [], ...data }, sha };
+  }
+
   async #worksFile() {
     const { data, sha } = await this.#gateway.readJson(FILES.works);
     return { data: { works: [], ...data }, sha };
   }
 
-  async #appendLog(entry) {
+  async #appendLog(newEntries) {
     const { data, sha } = await this.#gateway.readJson(FILES.log);
-    const entries = [...(data?.entries ?? []), entry].slice(-MAX_LOG_ENTRIES);
+    const entries = [...(data?.entries ?? []), ...newEntries].slice(-MAX_LOG_ENTRIES);
     await this.#gateway.writeJson(FILES.log, { entries }, { sha, message: 'Admin: registra il movimento di magazzino' });
   }
 
-  /** Cancellare una foto vecchia non deve far fallire il salvataggio dell'opera: se non riesce, resta un file in più. */
+  /** Cancellare una foto vecchia non deve far fallire il salvataggio dell'oggetto: se non riesce, resta un file in più. */
   async #removeQuietly(path, message) {
     try {
       const sha = await this.#gateway.shaOf(path);

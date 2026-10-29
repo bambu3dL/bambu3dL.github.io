@@ -525,3 +525,35 @@
 .work-photo { display: grid; gap: var(--s-2); margin: var(--s-5) 0 0; }
 .work-photo img { width: 100%; height: auto; border-radius: var(--radius-lg); background: var(--bg-raised); }
 .work-photo figcaption { font-size: var(--text-sm); color: var(--ink-dim); }
+
+/* Stati, contatti e bobine */
+.admin-status { display: inline-flex; align-items: center; justify-content: center; min-width: 7.5rem; padding: 0.25rem 0.7rem; border-radius: 999px; border: 1px solid var(--line-strong); font-size: var(--text-sm); font-weight: 600; white-space: nowrap; color: var(--ink-dim); }
+.admin-status.is-received { border-color: var(--signal); color: var(--signal); }
+.admin-status.is-reviewing, .admin-status.is-quoted, .admin-status.is-confirmed { border-color: var(--ink-faint); color: var(--ink); }
+.admin-status.is-printing { border-color: var(--low); color: var(--low); }
+.admin-status.is-ready { border-color: var(--ok); color: var(--ok); }
+.admin-status.is-closed { color: var(--ink-faint); }
+
+.admin-filter { max-width: 16rem; }
+.admin-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--s-4); padding: var(--s-5); background: var(--bg-raised); border-radius: var(--radius-lg); }
+.admin-details div { display: grid; gap: 0.2rem; min-width: 0; }
+.admin-details dt { font-size: var(--text-sm); color: var(--ink-dim); }
+.admin-details dd { overflow-wrap: anywhere; font-weight: 500; }
+.admin-message { display: grid; gap: var(--s-2); max-width: 46rem; }
+.admin-message h2 { font-size: 1.15rem; font-weight: 600; }
+.admin-message p { white-space: pre-wrap; overflow-wrap: anywhere; padding: var(--s-4); background: var(--bg-raised); border-radius: var(--radius); line-height: 1.55; }
+
+.spool-group { display: grid; gap: var(--s-2); }
+.spool-group + .spool-group { margin-top: var(--s-4); }
+.spool-group-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+.spool-none { padding-left: var(--s-2); }
+.admin-row.is-finished { opacity: 0.6; }
+.admin-row .admin-row-actions { flex-wrap: wrap; justify-content: flex-end; }
+
+@media (max-width: 40rem) {
+  .admin-status { justify-self: start; }
+  .admin-row .admin-status, .admin-row .admin-row-actions { grid-column: 1 / -1; }
+  .admin-row-actions { justify-content: flex-start; }
+}
+
+.admin-actions { align-items: flex-end; }

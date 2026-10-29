@@ -12,6 +12,8 @@ import { JsonMaterialsRepository } from './repositories/MaterialsRepository.js';
 import { SimulatedQuoteGateway } from './gateways/SimulatedQuoteGateway.js';
 import { AppsScriptQuoteGateway } from './gateways/AppsScriptQuoteGateway.js';
 import { GitHubContentGateway } from './gateways/GitHubContentGateway.js';
+import { AppsScriptContactsGateway } from './gateways/AppsScriptContactsGateway.js';
+import { ContactsAdmin } from './services/ContactsAdmin.js';
 import { AdminSession } from './services/AdminSession.js';
 import { TokenVault } from './services/TokenVault.js';
 import { QuoteService } from './services/QuoteService.js';
@@ -46,7 +48,7 @@ const deps = {
   store,
   theme,
   works: new JsonWorksRepository(SITE.data.works),
-  materials: new JsonMaterialsRepository(SITE.data.materials),
+  materials: new JsonMaterialsRepository(SITE.data.materials, SITE.data.spools),
   estimator: new StockEstimator(),
   snapshots: new SnapshotService(),
   timelapse: new TimelapseService({ reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches }),
@@ -60,6 +62,11 @@ const deps = {
     vault: new TokenVault(),
     createGateway: ({ repo, token }) => new GitHubContentGateway({ repo, token, root: SITE.github.root }),
   }),
+  // Le richieste dei clienti: stanno dietro Apps Script, aperte con la chiave di questo dispositivo.
+  contacts: {
+    available: Boolean(SITE.backend.quoteEndpoint),
+    open: (key) => new ContactsAdmin(new AppsScriptContactsGateway({ endpoint: SITE.backend.quoteEndpoint, key })),
+  },
   navigate: (path, options) => router.navigate(path, options),
 };
 
@@ -81,6 +88,8 @@ router
   .add('/privacy', () => new StaticController({ i18n, view: privacyView, titleKey: 'title.privacy' }))
   .add('/admin/login', restricted('LoginController'))
   .add('/admin', restricted('AdminOverviewController'))
+  .add('/admin/contacts', restricted('AdminContactsController'))
+  .add('/admin/contacts/:ref', restricted('AdminContactsController'))
   .add('/admin/materials', restricted('AdminMaterialsController'))
   .add('/admin/materials/:id', restricted('AdminMaterialsController'))
   .add('/admin/works', restricted('AdminWorksController'))

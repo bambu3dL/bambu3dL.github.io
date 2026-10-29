@@ -9,6 +9,7 @@ export const SITE = {
   data: {
     works: '/assets/data/works.json',
     materials: '/assets/data/materials.json',
+    spools: '/assets/data/spools.json',
     site: '/assets/data/site.json',
   },
   // Dove vive il sito. Il repository si ricava da "nome.github.io"; con un dominio proprio va scritto qui

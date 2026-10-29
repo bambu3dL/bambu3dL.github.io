@@ -17,14 +17,16 @@ export function detectRepo(hostname) {
   return match ? `${match[1]}/${match[1]}.github.io` : '';
 }
 
-// Chi è dentro all'area riservata e con quale chiave. L'accesso è il possesso di un token GitHub con diritto di
-// scrittura sul repository: la cassaforte lo tiene cifrato su questo dispositivo, la password lo apre per la visita.
+// Chi è dentro all'area riservata e con quali chiavi. L'accesso è il possesso di un token GitHub con diritto di
+// scrittura sul repository; per i contatti serve in più la chiave dell'app Apps Script. La cassaforte tiene tutto
+// cifrato su questo dispositivo e la password lo apre per la visita.
 // Il servizio non sa come si parla con GitHub: riceve `createGateway({ repo, token })` e una cassaforte.
 export class AdminSession {
   #vault;
   #createGateway;
   #storage;
   #gateway = null;
+  #secret = null; // { repo, token, adminKey } della visita in corso
 
   constructor({ vault, createGateway, storage = window.sessionStorage }) {
     this.#vault = vault;
@@ -45,17 +47,19 @@ export class AdminSession {
     return this.#gateway;
   }
 
+  /** La chiave dei contatti, oppure '' se non è stata ancora data a questo dispositivo. */
+  get adminKey() {
+    return this.#secret?.adminKey ?? '';
+  }
+
   /** Prima configurazione di questo dispositivo: verifica il token, lo cifra con la password e apre la sessione. */
-  async setup({ repo, token, passphrase }) {
-    const gateway = this.#build(repo.trim(), token.trim());
+  async setup({ repo, token, passphrase, adminKey = '' }) {
+    const secret = { repo: repo.trim(), token: token.trim(), adminKey: adminKey.trim() };
+    const gateway = this.#build(secret.repo, secret.token);
     const info = await this.#verify(gateway);
     if (!info.canWrite) throw new AdminError('noWrite');
-    try {
-      await this.#vault.save({ repo: repo.trim(), token: token.trim() }, passphrase);
-    } catch (error) {
-      throw new AdminError(error instanceof VaultError ? error.code : 'unavailable');
-    }
-    this.#open(gateway, repo.trim(), token.trim());
+    await this.#seal(secret, passphrase);
+    this.#open(gateway, secret);
   }
 
   async unlock(passphrase) {
@@ -65,12 +69,30 @@ export class AdminSession {
     } catch (error) {
       throw new AdminError(error instanceof VaultError ? error.code : 'unknown');
     }
-    this.#open(this.#build(secret.repo, secret.token), secret.repo, secret.token);
+    this.#open(this.#build(secret.repo, secret.token), { adminKey: '', ...secret });
+  }
+
+  /**
+   * Aggiunge (o cambia) la chiave dei contatti. Si richiede la password perché va ricifrata la cassaforte:
+   * prima la si verifica, così una password sbagliata non può sostituire quella vecchia.
+   */
+  async saveAdminKey(adminKey, passphrase) {
+    if (!this.#secret) throw new AdminError('unavailable');
+    try {
+      await this.#vault.open(passphrase);
+    } catch (error) {
+      throw new AdminError(error instanceof VaultError ? error.code : 'unknown');
+    }
+    const secret = { ...this.#secret, adminKey: adminKey.trim() };
+    await this.#seal(secret, passphrase);
+    this.#secret = secret;
+    this.#remember(secret);
   }
 
   /** Esce dalla visita; la cassaforte resta, così la prossima volta basta la password. */
   lock() {
     this.#gateway = null;
+    this.#secret = null;
     try {
       this.#storage.removeItem(SESSION_KEY);
     } catch { /* storage non disponibile: la sessione in memoria è già azzerata */ }
@@ -80,6 +102,14 @@ export class AdminSession {
   forget() {
     this.lock();
     this.#vault.clear();
+  }
+
+  async #seal(secret, passphrase) {
+    try {
+      await this.#vault.save(secret, passphrase);
+    } catch (error) {
+      throw new AdminError(error instanceof VaultError ? error.code : 'unavailable');
+    }
   }
 
   #build(repo, token) {
@@ -101,19 +131,28 @@ export class AdminSession {
     }
   }
 
-  #open(gateway, repo, token) {
+  #open(gateway, secret) {
     this.#gateway = gateway;
+    this.#secret = secret;
+    this.#remember(secret);
+  }
+
+  #remember(secret) {
     try {
-      this.#storage.setItem(SESSION_KEY, JSON.stringify({ repo, token }));
+      this.#storage.setItem(SESSION_KEY, JSON.stringify(secret));
     } catch { /* senza storage la sessione dura finché la pagina resta aperta */ }
   }
 
   #restore() {
     try {
       const saved = JSON.parse(this.#storage.getItem(SESSION_KEY));
-      if (saved?.repo && saved?.token) this.#gateway = this.#createGateway(saved);
+      if (saved?.repo && saved?.token) {
+        this.#gateway = this.#createGateway({ repo: saved.repo, token: saved.token });
+        this.#secret = { adminKey: '', ...saved };
+      }
     } catch {
       this.#gateway = null;
+      this.#secret = null;
     }
   }
 }

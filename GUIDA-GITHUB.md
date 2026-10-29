@@ -4,7 +4,7 @@ Alla fine avrai:
 
 - il sito online su `https://TUO-NOME.github.io` (gratis, con HTTPS);
 - un'**area riservata** (`/admin`) da cui gestisci materiali, opere, magazzino e impostazioni, anche dal telefono;
-- il **modulo di contatto** che salva i file su Google Drive e scrive via Gmail.
+- il **modulo di contatto** che salva i file su Google Drive, scrive via Gmail e tiene l'elenco delle richieste in un **foglio Google privato**, che gestisci dalla sezione **Contatti**.
 
 Tutto si fa dal browser. Il PC serve **una volta sola**, al passo 3, per caricare su GitHub i file del sito che ci sono già. Dopo, non serve più.
 
@@ -19,6 +19,7 @@ Tutto si fa dal browser. Il PC serve **una volta sola**, al passo 3, per caricar
 
 ## Cose da sapere prima
 
+- **I dati dei clienti non stanno nel repository.** Nome, email e messaggi delle richieste vivono solo nel tuo foglio Google (privato) e l'area riservata li legge con una chiave segreta che solo tu hai.
 - **Il repository deve essere pubblico** (Pages gratuito lo richiede). Quindi tutto ciò che sta nei dati è pubblico, compresi i grammi a magazzino e il registro dei movimenti. Le **note interne** sulle quantità non le ho previste proprio per questo: tienile altrove.
 - **I prezzi non ci sono più** e il "preventivo" è diventato "Contatti / Scrivici". Se invece volevi togliere del tutto anche il modulo di contatto, dimmelo.
 - Il token è la chiave del sito: chi lo ha può modificarlo. Si limita a **un solo repository** e a **un solo permesso** (passo 5).
@@ -45,13 +46,9 @@ Se non ne hai uno: <https://github.com/signup>. Attiva l'**autenticazione a due 
 3. **Public**. Lascia vuote le spunte "Add a README", ".gitignore" e "license".
 4. **Create repository**.
 
-## 3. Carica i file (l'unica volta in cui serve il PC)
+## 3. I file sul repository
 
-1. Nella pagina del repository vuoto premi **uploading an existing file** (oppure **Add file → Upload files**).
-2. Apri sul PC la cartella `C:\Lorenzo Claude\stampe3d` e trascina nella pagina **il contenuto della cartella**, non la cartella `stampe3d` stessa: così i percorsi nel repository restano `public/…`, `apps-script/…` e così via.
-3. GitHub accetta al massimo 100 file per volta e la cartella `public` ne ha circa 90. Quindi **fai due giri**: prima trascina solo `public` e premi **Commit changes**; poi torna su **Add file → Upload files** e trascina tutto il resto (`apps-script`, `tools`, `.github` e i file sciolti).
-4. In fondo, **Commit changes**.
-5. Controlla che nel repository ci sia la cartella `.github/workflows` con `pages.yml`. Se manca (a volte le cartelle che iniziano con un punto non vengono trascinate): **Add file → Create new file**, scrivi come nome `.github/workflows/pages.yml` (le barre creano le cartelle) e incolla il contenuto del file `stampe3d/.github/workflows/pages.yml`. Poi **Commit changes**.
+Questo passo è **già fatto**: il sito è stato caricato con Git dalla cartella del repository sul PC. Se un giorno servisse rifarlo dal browser: **Add file → Upload files**, trascina il contenuto della cartella (prima `public`, poi il resto: sono più di 100 file) e controlla che esista `.github/workflows/pages.yml`; se manca, crealo con **Add file → Create new file** incollando il contenuto.
 
 ## 4. Attiva GitHub Pages
 
@@ -81,8 +78,9 @@ Non servono altri permessi. Se per errore scegli "All repositories" o dai permes
 1. Apri `https://TUO-NOME.github.io/admin/login`.
 2. **Repository del sito**: dovrebbe essere già compilato (`TUO-NOME/TUO-NOME.github.io`).
 3. **Token di GitHub**: incolla il token del passo 5.
-4. **Scegli una password per questo dispositivo** (almeno 10 caratteri) e ripetila. Serve ad aprire il token, che sul dispositivo resta cifrato: senza questa password quello che è salvato non serve a nulla.
-5. **Collega ed entra**.
+4. **Chiave dei contatti** (facoltativa): la crei al passo 8.5. Puoi lasciarla vuota ora e darla dopo, dalla sezione **Contatti**.
+5. **Scegli una password per questo dispositivo** (almeno 10 caratteri) e ripetila. Serve ad aprire il token, che sul dispositivo resta cifrato: senza questa password quello che è salvato non serve a nulla.
+6. **Collega ed entra**.
 
 Da quel momento, su quel dispositivo, basta la password. Per collegare un altro telefono o PC ripeti i punti 1–5 con lo stesso token.
 
@@ -93,11 +91,14 @@ Da quel momento, su quel dispositivo, basta la password. Per collegare un altro 
 
 | Sezione | Cosa fai |
 |---|---|
-| **Panoramica** | Stato della pubblicazione, conteggi, bobine sotto il 20%, scorciatoie |
-| **Materiali** | Aggiungi, cambia o elimina colori/bobine; gestisci le famiglie (PLA, PETG…) e i loro testi. Il residuo non si modifica qui |
-| **Opere** | Aggiungi, cambia, nascondi o elimina le realizzazioni: titoli e descrizioni IT/EN, materiale, grammi, misure, forma 3D di esempio, **foto della stampa** (ridotta a 1600 px prima di caricarla) |
-| **Magazzino** | "Ho stampato un'opera" (scala i grammi stimati), movimenti manuali (togli, aggiungi, imposta), registro degli ultimi movimenti |
+| **Panoramica** | Richieste da leggere, stato della pubblicazione, conteggi, fili da riordinare, scorciatoie |
+| **Contatti** | Le richieste arrivate dal modulo: elenco con filtro per stato, scheda con messaggio e file, risposta per email, stato (ricevuta, in valutazione, proposta inviata, confermata, in stampa, pronta, chiusa) e nota; eliminazione |
+| **Fili** | Il catalogo: famiglia (PLA, PETG…), colore, marca, peso nominale di una bobina. Alla creazione puoi aggiungere subito le bobine. Qui anche i testi delle famiglie |
+| **Bobine** | I pezzi fisici di ogni filo: aggiungi una bobina (nuova o iniziata), regola i grammi, segnala finita o riaprila, eliminala. **"Ho stampato un oggetto"** toglie i grammi stimati partendo dalla bobina più vecchia e passa alla successiva quando si svuota. Registro dei movimenti |
+| **Oggetti** | Le realizzazioni in vetrina: titoli e descrizioni IT/EN, filo, grammi, misure, forma 3D di esempio, **foto della stampa** (ridotta a 1600 px prima di caricarla), visibile o nascosto |
 | **Impostazioni** | Nome del sito ed email di contatto; link alla cronologia delle modifiche |
+
+**Fili e bobine, in breve.** Un *filo* è una voce del catalogo ("PLA · Rosso lampone"); una *bobina* è un pezzo fisico di quel filo. Un filo può avere più bobine e il suo residuo è la somma di quelle in uso. Una bobina a zero grammi si chiude da sola; una bobina chiusa non conta nel residuo mostrato nel sito.
 
 Dopo ogni salvataggio il sito pubblico si aggiorna da solo in 1–2 minuti. In **Panoramica** vedi "In corso" e poi "Il sito è aggiornato" (se hai dato il permesso Actions).
 
@@ -107,7 +108,7 @@ Dopo ogni salvataggio il sito pubblico si aggiorna da solo in 1–2 minuti. In *
 
 ---
 
-## 8. Modulo di contatto: Apps Script, Drive e Gmail
+## 8. Modulo di contatto e contatti: Apps Script, Drive, Gmail e foglio
 
 Sul tuo account Gmail. Non serve nulla sul PC.
 
@@ -115,37 +116,42 @@ Sul tuo account Gmail. Non serve nulla sul PC.
 1. Vai su <https://script.google.com> e premi **Nuovo progetto**. Rinominalo "Stampe3D contatti".
 
 **8.2 Incolla il codice**
-1. Apri `Code.gs`, cancella tutto e incolla il contenuto di `apps-script/Code.gs` (aprilo da GitHub: vai al file e premi il pulsante **Copy raw file**).
+1. Apri `Code.gs`, cancella tutto e incolla il contenuto di `apps-script/Code.gs` (aprilo da GitHub: vai al file e premi **Copy raw file**).
 2. **Impostazioni progetto** (ingranaggio) → spunta **Mostra il file manifest "appsscript.json" nell'editor**.
 3. Torna all'**Editor**, apri `appsscript.json` e incolla il contenuto di `apps-script/appsscript.json`. Salva.
 
-**8.3 Prepara Drive**
+**8.3 Prepara Drive e il foglio**
 1. Nel menu delle funzioni scegli **`inizializza`** → **Esegui**.
 2. Autorizza: **Verifica le autorizzazioni** → il tuo account → "Google non ha verificato questa app" (è normale: è il tuo script) → **Avanzate** → **Vai a … (non sicuro)** → **Consenti**.
-3. Nel registro compare il link alla cartella "Stampe3D – richieste" creata su Drive.
+3. Nel registro compaiono il link alla cartella "Stampe3D – richieste" e quello al foglio "Stampe3D – elenco richieste". Il foglio è privato: lo vedi solo tu.
 
 **8.4 Controlla le impostazioni** (Impostazioni progetto → Proprietà script)
 
 | Proprietà | Valore |
 |---|---|
 | `DRIVE_FOLDER_ID` | l'ID della cartella (messo da `inizializza`) |
+| `SHEET_ID` | l'ID del foglio (messo da `inizializza`) |
 | `OWNER_EMAILS` | gli indirizzi che ricevono ogni messaggio, separati da virgola (se siete in due con due Gmail, scrivili entrambi) |
 | `SITE_NAME` | il nome che compare nelle email |
 
-**8.5 Collaudo:** esegui **`prova`**. Devono comparire una sottocartella su Drive e due email (una a voi, una di conferma).
+**8.5 Crea la chiave dei contatti.** Scegli la funzione **`creaChiaveAdmin`** → **Esegui**. Nel registro compare una chiave lunga: **copiala subito** nel gestore di password. È ciò che permette all'area riservata di leggere le richieste. Se la perdi, rilancia la funzione: ne crea una nuova (e va ridata ai dispositivi).
 
-**8.6 Pubblica:** **Esegui il deployment → Nuovo deployment** → ingranaggio → **App web** → **Esegui come: Me**, **Chi ha accesso: Chiunque** → **Esegui il deployment**. Copia l'**URL dell'app web** (finisce con `/exec`).
+**8.6 Collaudo:** esegui **`prova`**. Devono comparire una sottocartella su Drive, una riga nel foglio "Richieste" e due email (una a voi, una di conferma).
 
-**8.7 Collegalo al sito (sempre dal browser)**
+**8.7 Pubblica:** **Esegui il deployment → Nuovo deployment** → ingranaggio → **App web** → **Esegui come: Me**, **Chi ha accesso: Chiunque** → **Esegui il deployment**. Copia l'**URL dell'app web** (finisce con `/exec`).
+
+**8.8 Collegalo al sito (sempre dal browser)**
 1. Su GitHub apri `public/src/config.js` e premi la matita (**Edit this file**).
 2. Nella riga `quoteEndpoint: ''` incolla l'URL tra gli apici.
-3. **Commit changes**. In un paio di minuti il modulo invia davvero.
+3. **Commit changes**. In un paio di minuti il modulo invia davvero e la sezione **Contatti** si può collegare.
 
-**8.8 Se modifichi `Code.gs`:** non basta salvare. **Esegui il deployment → Gestisci i deployment** → matita → **Versione: Nuova versione**. L'URL non cambia.
+**8.9 Collega i contatti all'area riservata.** Apri **Contatti**: ti chiede la **chiave** (passo 8.5) e la **password di questo dispositivo**. La chiave viene cifrata come il token e non dovrai rimetterla su questo dispositivo. Su un altro dispositivo, la dai al primo accesso o dalla stessa sezione.
 
-**8.9 Se siete in due:** condividi la cartella "Stampe3D – richieste" con l'altra Gmail, altrimenti l'altro Lorenzo riceve la mail ma non può aprire i file.
+**8.10 Se modifichi `Code.gs`** (ad esempio dopo un aggiornamento del sito): non basta salvare. Incolla il nuovo codice, lancia di nuovo **`inizializza`** (è sicuro rilanciarlo: crea solo ciò che manca, ad esempio il foglio se è la prima volta), poi **Esegui il deployment → Gestisci i deployment** → matita → **Versione: Nuova versione**. L'URL non cambia. Google può chiedere di nuovo le autorizzazioni (il foglio richiede un permesso in più).
 
-**Da sapere:** una Gmail gratuita manda circa 100 destinatari al giorno (ogni messaggio ne usa 2 più un altro per ogni gestore). Il limite sui file (25 MB ciascuno, 30 MB in tutto) è prudente: fai una prova reale con un STL grande e, se fallisce, abbassalo in `Code.gs` **e** in `public/src/models/QuoteRequest.js`. Lo script ricontrolla tutto lato server e ammette al massimo 3 messaggi all'ora per indirizzo.
+**8.11 Se siete in due:** condividi la cartella "Stampe3D – richieste" e il foglio con l'altra Gmail, altrimenti l'altro Lorenzo riceve la mail ma non può aprire i file. Per usare la sezione Contatti anche dal suo dispositivo, serve la stessa chiave.
+
+**Da sapere:** una Gmail gratuita manda circa 100 destinatari al giorno (ogni messaggio ne usa 2 più un altro per ogni gestore). Il limite sui file (25 MB ciascuno, 30 MB in tutto) è prudente: fai una prova reale con un STL grande e, se fallisce, abbassalo in `Code.gs` **e** in `public/src/models/QuoteRequest.js`. Lo script ricontrolla tutto lato server, ammette al massimo 3 messaggi all'ora per indirizzo e blocca per un'ora la lettura dei contatti dopo 10 chiavi sbagliate. Nel foglio le celle sono in formato testo, così un cliente non può inserirci formule.
 
 ---
 
@@ -155,7 +161,8 @@ Sul tuo account Gmail. Non serve nulla sul PC.
 - [ ] Nessuna pagina parla di prezzi o preventivi.
 - [ ] Accesso su `/admin/login`; con la password sbagliata dice "Password non corretta."
 - [ ] Salvi una modifica di prova (ad esempio il nome in **Impostazioni**): dopo 1–2 minuti la vedi nel sito.
-- [ ] Il modulo di contatto invia con un file e arrivano le due email.
+- [ ] Il modulo di contatto invia con un file, arrivano le due email e la richiesta compare in **Contatti**.
+- [ ] Cambi lo stato di una richiesta di prova e poi la elimini.
 - [ ] Salvato il token nel gestore di password.
 
 ---
@@ -185,6 +192,10 @@ Sul tuo account Gmail. Non serve nulla sul PC.
 | Ho salvato ma il sito non cambia | La pubblicazione richiede 1–2 minuti; oppure è fallita | Panoramica → "Apri le Actions" e guarda l'ultimo lavoro. Ricarica con Ctrl+F5 |
 | Ho dimenticato la password del dispositivo | Non si recupera (è cifrata) | Pagina di accesso → "Dimentica questo dispositivo", poi rifai il passo 6 con lo stesso token |
 | Il modulo dice "Non siamo riusciti a inviare" | URL di Apps Script sbagliato, deployment non su "Chiunque", file oltre il limite | Apri l'URL nel browser: deve rispondere `{"ok":true…}`. Riprova senza file. In Apps Script → **Esecuzioni** vedi l'errore |
+| **Contatti**: "La chiave dei contatti non è corretta" | Chiave sbagliata o ruotata (hai rilanciato `creaChiaveAdmin`) | Incolla la chiave attuale nel modulo che compare |
+| **Contatti**: "bloccato per un'ora" | Troppi tentativi con chiavi sbagliate | Aspetta un'ora, poi riprova con la chiave giusta |
+| **Contatti**: "Lo script non ha ancora il foglio o la chiave" | Mancano `SHEET_ID` o `ADMIN_KEY` | Rilancia `inizializza` e `creaChiaveAdmin` (passi 8.3 e 8.5), poi una nuova versione del deployment |
+| **Contatti**: la richiesta c'è su Drive e per email ma non nell'elenco | Il foglio non era ancora stato creato quando è arrivata | Aggiungila a mano nel foglio, oppure ignora: i file e le email ci sono comunque |
 | Le email non arrivano | Quota Gmail, spam, o `OWNER_EMAILS` vuoto | Controlla lo spam e **Esecuzioni** |
 
 ## 12. Se il token finisce in mani sbagliate

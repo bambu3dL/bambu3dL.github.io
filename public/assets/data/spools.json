@@ -1,0 +1,76 @@
+{
+  "spools": [
+    {
+      "id": "pla-lampone-1",
+      "materialId": "pla-lampone",
+      "netG": 1000,
+      "remainingG": 742,
+      "status": "active",
+      "addedAt": "2026-10-01"
+    },
+    {
+      "id": "pla-girasole-1",
+      "materialId": "pla-girasole",
+      "netG": 1000,
+      "remainingG": 515,
+      "status": "active",
+      "addedAt": "2026-10-01"
+    },
+    {
+      "id": "pla-cobalto-1",
+      "materialId": "pla-cobalto",
+      "netG": 1000,
+      "remainingG": 868,
+      "status": "active",
+      "addedAt": "2026-10-01"
+    },
+    {
+      "id": "pla-bottiglia-1",
+      "materialId": "pla-bottiglia",
+      "netG": 1000,
+      "remainingG": 310,
+      "status": "active",
+      "addedAt": "2026-10-01"
+    },
+    {
+      "id": "pla-gesso-1",
+      "materialId": "pla-gesso",
+      "netG": 1000,
+      "remainingG": 960,
+      "status": "active",
+      "addedAt": "2026-10-01"
+    },
+    {
+      "id": "pla-confetto-1",
+      "materialId": "pla-confetto",
+      "netG": 1000,
+      "remainingG": 184,
+      "status": "active",
+      "addedAt": "2026-10-01"
+    },
+    {
+      "id": "petg-turchese-1",
+      "materialId": "petg-turchese",
+      "netG": 1000,
+      "remainingG": 640,
+      "status": "active",
+      "addedAt": "2026-10-01"
+    },
+    {
+      "id": "petg-ruggine-1",
+      "materialId": "petg-ruggine",
+      "netG": 1000,
+      "remainingG": 421,
+      "status": "active",
+      "addedAt": "2026-10-01"
+    },
+    {
+      "id": "tpu-cemento-1",
+      "materialId": "tpu-cemento",
+      "netG": 500,
+      "remainingG": 255,
+      "status": "active",
+      "addedAt": "2026-10-01"
+    }
+  ]
+}

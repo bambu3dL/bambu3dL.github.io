@@ -2,6 +2,7 @@ import { PrivateController } from './PrivateController.js';
 import { renderInto } from '../core/dom.js';
 import { clearFieldErrors, showFieldErrors } from '../core/forms.js';
 import { html } from '../core/html.js';
+import { ContactsError } from '../gateways/ContactsGateway.js';
 import { ContentError } from '../gateways/ContentGateway.js';
 import { A } from '../i18n/admin.it.js';
 import { ValidationError } from '../models/AdminRules.js';
@@ -123,6 +124,10 @@ export class AdminPage extends PrivateController {
       this.flash(known.length ? A.common.fixErrors : (A.common.fieldErrors[Object.values(error.errors)[0]] ?? A.common.fixErrors), 'error');
       return;
     }
+    if (error instanceof ContactsError) {
+      this.flash(A.contacts.errors[error.code] ?? A.contacts.errors.server, 'error');
+      return;
+    }
     const code = error instanceof ContentError ? error.code : 'unknown';
     if (code === 'auth') {
       setFlash(A.common.errors.auth, 'error');
@@ -134,8 +139,19 @@ export class AdminPage extends PrivateController {
     this.flash(A.common.errors[code] ?? A.common.errors.unknown, 'error');
   }
 
+  #message(error) {
+    if (error instanceof ContactsError) return A.contacts.errors[error.code] ?? A.contacts.errors.server;
+    if (error instanceof ContentError) return A.common.errors[error.code] ?? A.common.errors.unknown;
+    return A.common.errors.unknown;
+  }
+
+  /** Le richieste dei clienti, tramite la chiave di questo dispositivo. Per sapere se si può, vedi deps.contacts.available. */
+  get contacts() {
+    return this.deps.contacts.open(this.deps.session.adminKey);
+  }
+
   #fail(error) {
-    this.draw(html`<section class="section admin-section"><p class="admin-state is-failed">${error instanceof ContentError ? (A.common.errors[error.code] ?? A.common.errors.unknown) : A.common.errors.unknown}</p></section>`);
+    this.draw(html`<section class="section admin-section"><p class="admin-state is-failed">${this.#message(error)}</p></section>`);
     if (error instanceof ContentError && error.code === 'auth') this.#report(error);
     else if (!(error instanceof ContentError)) console.error(error);
   }

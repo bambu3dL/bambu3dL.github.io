@@ -3,8 +3,11 @@
  * Riceve la richiesta dal sito, la ricontrolla, salva i file su Drive e scrive via Gmail a noi e al cliente.
  * Le istruzioni per metterlo in funzione sono in GUIDA-MESSA-ONLINE.md (parte 2).
  *
- * Funzioni da lanciare a mano dall'editor: inizializza() una volta, prova() per un invio di collaudo.
- * Impostazioni (Impostazioni progetto > Proprietà script): DRIVE_FOLDER_ID, OWNER_EMAILS, SITE_NAME.
+ * Ogni richiesta finisce anche in un foglio Google privato (nel tuo Drive): da lì l'area riservata del sito la mostra,
+ * ne cambia lo stato e la elimina, presentando la ADMIN_KEY. Nessun dato dei clienti sta nel repository pubblico.
+ *
+ * Funzioni da lanciare a mano dall'editor: inizializza() una volta, creaChiaveAdmin() una volta, prova() per un collaudo.
+ * Impostazioni (Impostazioni progetto > Proprietà script): DRIVE_FOLDER_ID, SHEET_ID, OWNER_EMAILS, SITE_NAME, ADMIN_KEY.
  */
 
 // Gli stessi limiti del sito (public/src/models/QuoteRequest.js): se li cambi, cambiali in entrambi i posti.
@@ -21,12 +24,23 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const REFERENCE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const TIME_ZONE = 'Europe/Rome';
 
+// Il foglio delle richieste: una riga per richiesta. L'ordine delle colonne è usato da rowToContact() e dagli aggiornamenti.
+const SHEET_NAME = 'Richieste';
+const SHEET_HEADERS = ['Riferimento', 'Ricevuta', 'Stato', 'Nome', 'Email', 'Si parte da', 'Materiale', 'Quantità', 'Entro quando', 'Oggetto', 'Lingua', 'Descrizione', 'File', 'Cartella Drive', 'Nota', 'Aggiornata'];
+const COL = { reference: 0, receivedAt: 1, status: 2, note: 14, updatedAt: 15 };
+const CONTACT_STATUSES = ['received', 'reviewing', 'quoted', 'confirmed', 'printing', 'ready', 'closed'];
+const REFERENCE = /^Q-[A-Z2-9]{5}$/;
+const ADMIN_FAILS_PER_HOUR = 10;
+const MAX_LIST = 500;
+
 /* ---------- Punti d'ingresso ---------- */
 
 function doPost(e) {
   try {
     const payload = parseBody(e);
     if (!payload) return reply({ ok: false, error: 'bad_request' });
+    // Il modulo del sito non manda "action"; l'area riservata sì, e deve presentare la chiave.
+    if (payload.action && payload.action !== 'submit') return adminAction(payload);
 
     const invalid = validate(payload);
     if (invalid) return reply({ ok: false, error: invalid });
@@ -34,6 +48,7 @@ function doPost(e) {
 
     const reference = newReference();
     const folder = saveRequest(reference, payload);
+    recordRequest(reference, payload, folder);
     notify(reference, payload, folder);
     return reply({ ok: true, reference });
   } catch (error) {
@@ -57,10 +72,27 @@ function inizializza() {
     folderId = DriveApp.createFolder('Stampe3D – richieste').getId();
     props.setProperty('DRIVE_FOLDER_ID', folderId);
   }
+  if (!props.getProperty('SHEET_ID')) {
+    const spreadsheet = SpreadsheetApp.create('Stampe3D – elenco richieste');
+    const sheet = spreadsheet.getSheets()[0];
+    sheet.setName(SHEET_NAME);
+    sheet.getRange(1, 1, 1, SHEET_HEADERS.length).setNumberFormat('@').setValues([SHEET_HEADERS]);
+    sheet.setFrozenRows(1);
+    DriveApp.getFileById(spreadsheet.getId()).moveTo(DriveApp.getFolderById(folderId));
+    props.setProperty('SHEET_ID', spreadsheet.getId());
+  }
   if (!props.getProperty('OWNER_EMAILS')) props.setProperty('OWNER_EMAILS', Session.getEffectiveUser().getEmail());
   if (!props.getProperty('SITE_NAME')) props.setProperty('SITE_NAME', 'Stampe3D');
   console.log('Cartella Drive delle richieste: ' + DriveApp.getFolderById(folderId).getUrl());
+  console.log('Foglio delle richieste: ' + SpreadsheetApp.openById(props.getProperty('SHEET_ID')).getUrl());
   console.log('Le notifiche arrivano a: ' + props.getProperty('OWNER_EMAILS'));
+}
+
+/** Crea la chiave che apre l'elenco dei contatti nell'area riservata e la scrive nel registro: copiala subito. */
+function creaChiaveAdmin() {
+  const key = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  PropertiesService.getScriptProperties().setProperty('ADMIN_KEY', key);
+  console.log('Chiave dei contatti (incollala nell\'area riservata): ' + key);
 }
 
 /** Invia una richiesta finta a te stesso: controlla cartella Drive ed email, e fa comparire le autorizzazioni. */
@@ -193,6 +225,111 @@ function saveRequest(reference, p) {
   });
   folder.createFile('richiesta.txt', summary(reference, p), MimeType.PLAIN_TEXT);
   return folder;
+}
+
+/* ---------- Foglio delle richieste e area riservata ---------- */
+
+function requestsSheet() {
+  const id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
+  return id ? SpreadsheetApp.openById(id).getSheetByName(SHEET_NAME) : null;
+}
+
+/** Un testo che comincia con = + - @ potrebbe essere letto come formula: lo si fa precedere da uno spazio. */
+function cell(value) {
+  const text = String(value === undefined || value === null ? '' : value);
+  return /^[=+\-@\t\r]/.test(text) ? ' ' + text : text;
+}
+
+/** Aggiunge la richiesta al foglio. Se il foglio non c'è o fallisce, la richiesta è comunque su Drive e per email. */
+function recordRequest(reference, p, folder) {
+  try {
+    const sheet = requestsSheet();
+    if (!sheet) return;
+    const files = (Array.isArray(p.files) ? p.files : []).map(function (file) { return safeName(file.name); }).join('; ');
+    const material = clean(p.materialId, 60) === 'other' ? 'Altro: ' + clean(p.customMaterial, 120) : clean(p.materialLabel, 120) || clean(p.materialId, 60);
+    const row = [
+      reference, new Date().toISOString(), 'received', clean(p.name, 120), clean(p.email, 254), p.mode === 'file' ? 'file' : 'idea',
+      material, Math.floor(Number(p.quantity)), clean(p.deadline, 120), clean(p.workTitle, 120), p.lang === 'en' ? 'en' : 'it',
+      clean(p.description, 5000, true), files, folder.getUrl(), '', '',
+    ].map(cell);
+    const lock = LockService.getScriptLock();
+    lock.waitLock(10000);
+    try {
+      // Formato "testo semplice": niente formule né date automatiche, qualunque cosa scriva il cliente.
+      const range = sheet.getRange(sheet.getLastRow() + 1, 1, 1, SHEET_HEADERS.length);
+      range.setNumberFormat('@');
+      range.setValues([row]);
+    } finally {
+      lock.releaseLock();
+    }
+  } catch (error) {
+    console.error('Richiesta non scritta nel foglio: ' + (error && error.stack ? error.stack : error));
+  }
+}
+
+function sameKey(given, stored) {
+  const a = String(given === undefined || given === null ? '' : given);
+  let diff = a.length === stored.length ? 0 : 1;
+  for (let i = 0; i < stored.length; i++) diff |= (a.charCodeAt(i) || 0) ^ stored.charCodeAt(i);
+  return diff === 0;
+}
+
+/** Controlla la chiave. Restituisce un codice d'errore oppure null se va bene. Dopo troppi errori blocca per un'ora. */
+function checkAdminKey(given) {
+  const stored = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (!stored) return 'not_configured';
+  const cache = CacheService.getScriptCache();
+  const fails = Number(cache.get('adminfail') || 0);
+  if (fails >= ADMIN_FAILS_PER_HOUR) return 'locked';
+  if (sameKey(given, stored)) return null;
+  cache.put('adminfail', String(fails + 1), 3600);
+  return 'key';
+}
+
+function text(value) {
+  return value instanceof Date ? value.toISOString() : String(value === undefined || value === null ? '' : value).trim();
+}
+
+function rowToContact(row) {
+  return {
+    reference: text(row[0]), receivedAt: text(row[1]), status: text(row[2]) || 'received', name: text(row[3]), email: text(row[4]),
+    mode: text(row[5]), material: text(row[6]), quantity: Number(row[7]) || 1, deadline: text(row[8]), work: text(row[9]), lang: text(row[10]),
+    description: text(row[11]), files: text(row[12]), driveUrl: text(row[13]), note: text(row[14]), updatedAt: text(row[15]),
+  };
+}
+
+function adminAction(p) {
+  const refused = checkAdminKey(p.key);
+  if (refused) return reply({ ok: false, error: refused });
+  const sheet = requestsSheet();
+  if (!sheet) return reply({ ok: false, error: 'not_configured' });
+  const values = sheet.getDataRange().getValues();
+
+  if (p.action === 'list') {
+    const contacts = values.slice(1).filter(function (row) { return text(row[0]); }).map(rowToContact).reverse().slice(0, MAX_LIST);
+    return reply({ ok: true, contacts: contacts });
+  }
+
+  const reference = text(p.reference);
+  if (!REFERENCE.test(reference)) return reply({ ok: false, error: 'bad_request' });
+  let index = -1;
+  for (let i = 1; i < values.length; i++) {
+    if (text(values[i][COL.reference]) === reference) { index = i; break; }
+  }
+  if (index < 0) return reply({ ok: false, error: 'not_found' });
+
+  if (p.action === 'update') {
+    if (CONTACT_STATUSES.indexOf(p.status) < 0) return reply({ ok: false, error: 'bad_request' });
+    const note = cell(clean(p.note, 1000, true));
+    sheet.getRange(index + 1, COL.status + 1, 1, 1).setNumberFormat('@').setValues([[p.status]]);
+    sheet.getRange(index + 1, COL.note + 1, 1, 2).setNumberFormat('@').setValues([[note, new Date().toISOString()]]);
+    return reply({ ok: true });
+  }
+  if (p.action === 'delete') {
+    sheet.deleteRow(index + 1);
+    return reply({ ok: true });
+  }
+  return reply({ ok: false, error: 'bad_request' });
 }
 
 /* ---------- Gmail ---------- */

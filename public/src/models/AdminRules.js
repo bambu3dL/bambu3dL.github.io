@@ -82,17 +82,20 @@ export function inkFor(hex) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#1c1a15' : '#ffffff';
 }
 
-/* ---------- Materiali ---------- */
+/* ---------- Fili (il catalogo) ---------- */
 
-export function checkMaterial(input, { families }) {
+export function checkMaterial(input, { families, creating = false }) {
   const errors = {};
   if (!Object.hasOwn(families, text(input.family))) errors.family = 'family';
   if (text(input.nameIt).length < 2) errors.nameIt = 'required';
+  if (text(input.brand).length > 40) errors.brand = 'name';
   if (!HEX.test(text(input.hex))) errors.hex = 'hex';
-  const stock = number(input.stockG);
-  if (!Number.isFinite(stock) || stock < 0 || stock > 100000) errors.stockG = 'range';
   const spool = number(input.spoolG);
   if (!Number.isFinite(spool) || spool < 1 || spool > 20000) errors.spoolG = 'range';
+  if (creating) {
+    const count = number(input.initialSpools);
+    if (!Number.isInteger(count) || count < 0 || count > 10) errors.initialSpools = 'range';
+  }
   return errors;
 }
 
@@ -106,9 +109,37 @@ export function materialRecord(input, id) {
     hex,
     ink: inkFor(hex),
     name,
-    stockG: Math.round(number(input.stockG)),
+    ...(text(input.brand) ? { brand: text(input.brand) } : {}),
     spoolG: Math.round(number(input.spoolG)),
   };
+}
+
+/* ---------- Bobine (i pezzi fisici) ---------- */
+
+export function checkSpool(input, { materialIds }) {
+  const errors = {};
+  if (!materialIds.has(text(input.materialId))) errors.materialId = 'material';
+  const net = number(input.netG);
+  if (!Number.isFinite(net) || net < 1 || net > 20000) errors.netG = 'range';
+  const left = number(input.remainingG);
+  if (!Number.isFinite(left) || left < 0 || left > 20000) errors.remainingG = 'range';
+  return errors;
+}
+
+export function spoolRecord(input, id, today) {
+  return {
+    id,
+    materialId: text(input.materialId),
+    netG: Math.round(number(input.netG)),
+    remainingG: Math.round(number(input.remainingG)),
+    status: 'active',
+    addedAt: today,
+  };
+}
+
+/** Una bobina nuova è la stessa cosa di un'altra: piena, in uso, con la data di oggi. */
+export function newSpool(materialId, netG, id, today) {
+  return spoolRecord({ materialId, netG, remainingG: netG }, id, today);
 }
 
 export function checkFamily(input) {
@@ -192,4 +223,16 @@ export function checkSettings(input) {
 
 export function settingsRecord(input) {
   return { name: text(input.name), contactEmail: text(input.contactEmail) };
+}
+
+/* ---------- Contatti (richieste dal modulo) ---------- */
+
+/** Gli stati di una richiesta, nell'ordine in cui di solito si attraversano. 'closed' = chiusa, senza altro da fare. */
+export const CONTACT_STATUSES = Object.freeze(['received', 'reviewing', 'quoted', 'confirmed', 'printing', 'ready', 'closed']);
+
+export function checkContactUpdate({ status, note }) {
+  const errors = {};
+  if (!CONTACT_STATUSES.includes(text(status))) errors.status = 'mode';
+  if (text(note).length > 1000) errors.note = 'range';
+  return errors;
 }

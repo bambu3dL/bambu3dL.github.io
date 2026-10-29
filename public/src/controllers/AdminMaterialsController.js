@@ -12,10 +12,10 @@ export class AdminMaterialsController extends AdminPage {
 
   async show({ params }) {
     this.draw(html`<section class="section admin-section"><p class="muted">${A.common.loading}</p></section>`);
-    const { materials, families } = await this.catalog.materials();
+    const { materials, families, spools } = await this.catalog.materials();
     this.#families = families;
     if (!params.id) {
-      this.draw(materialsListView({ materials, families }));
+      this.draw(materialsListView({ materials, families, spools }));
       return;
     }
     const material = params.id === 'new' ? null : materials.find((item) => item.id === params.id);
@@ -24,7 +24,7 @@ export class AdminMaterialsController extends AdminPage {
       this.navigate('/admin/materials');
       return;
     }
-    this.draw(materialFormView({ material, families }));
+    this.draw(materialFormView({ material, families, spools }));
   }
 
   async onSubmit(event) {
