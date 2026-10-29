@@ -1,0 +1,36 @@
+# Pubblica il sito su GitHub Pages a ogni modifica del ramo principale.
+# Anche le modifiche fatte dall'area riservata (che sono commit) rimettono online il sito: servono circa 1-2 minuti.
+name: Pubblica il sito
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      # GitHub Pages non riscrive le rotte: un indirizzo come /gallery darebbe 404. Con un 404.html uguale a
+      # index.html il sito si apre lo stesso e il router interno mostra la pagina giusta.
+      - name: Prepara 404.html
+        run: cp public/index.html public/404.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - id: deployment
+        uses: actions/deploy-pages@v4

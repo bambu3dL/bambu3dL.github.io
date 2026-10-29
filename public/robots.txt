@@ -1,0 +1,4 @@
+# Sito provvisorio: i motori di ricerca non devono indicizzarlo.
+# Da togliere (o sostituire con "Allow: /") quando il sito diventa pubblico sul dominio definitivo.
+User-agent: *
+Disallow: /

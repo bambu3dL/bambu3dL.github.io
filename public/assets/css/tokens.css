@@ -1,0 +1,101 @@
+/* Caratteri: serviti dal sito stesso (nessuna richiesta a terzi). */
+@font-face {
+  font-family: "Bricolage";
+  src: url("/assets/fonts/bricolage-grotesque-latin-wdth-normal.woff2") format("woff2");
+  font-weight: 200 800;
+  font-stretch: 75% 100%;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Hanken";
+  src: url("/assets/fonts/hanken-grotesk-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-display: "Bricolage", system-ui, sans-serif;
+  --font-body: "Hanken", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --text-sm: 0.875rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.25rem;
+  --text-xl: clamp(1.45rem, 2.4vw, 1.9rem);
+  --display-2: clamp(2.1rem, 4.6vw, 3.5rem);
+  --display-1: clamp(2.8rem, 6vw, 5.4rem);
+
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4rem;
+  --s-9: 6rem;
+  --s-10: 8rem;
+
+  --gutter: clamp(1.25rem, 4vw, 3rem);
+  --max-width: 78rem;
+  --header-h: 4rem;
+  --radius: 0.4rem;
+  --radius-lg: 0.7rem;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Di sera: lo studio con la luce puntata sul piano. */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: oklch(0.158 0.006 60);
+  --bg-raised: oklch(0.205 0.007 60);
+  --bg-sunk: oklch(0.125 0.005 60);
+  --line: oklch(0.29 0.008 60);
+  --line-strong: oklch(0.44 0.01 60);
+  --ink: oklch(0.95 0.004 80);
+  --ink-dim: oklch(0.75 0.006 80);
+  --ink-faint: oklch(0.62 0.006 80);
+  --signal: oklch(0.72 0.17 52);
+  --signal-ink: oklch(0.16 0.02 50);
+  --ok: oklch(0.78 0.14 150);
+  --low: oklch(0.76 0.15 60);
+  --error: oklch(0.72 0.18 25);
+  --ink-on-plate: oklch(0.82 0.01 80);
+  --shadow: 0 18px 36px -18px rgb(0 0 0 / 0.7);
+  /* Il palcoscenico dell'hero: gli stessi valori della nebbia nella scena 3D. */
+  --stage-bg: radial-gradient(ellipse 85% 75% at 64% 60%, #2b2723 0%, #181614 58%, #100f0d 100%);
+  --stage-fog: #161412;
+  --stage-edge: rgb(12 11 10 / 0.7);
+  --stage-text-shade: rgb(14 13 12 / 0.72);
+  --plate: #2d261e;
+  --plate-line: rgb(226 196 138 / 0.28);
+}
+
+/* Di giorno: studio chiaro, luce diffusa. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: oklch(0.945 0.003 250);
+  --bg-raised: oklch(0.98 0.002 250);
+  --bg-sunk: oklch(0.905 0.004 250);
+  --line: oklch(0.85 0.004 250);
+  --line-strong: oklch(0.68 0.006 250);
+  --ink: oklch(0.2 0.008 70);
+  --ink-dim: oklch(0.38 0.008 70);
+  --ink-faint: oklch(0.48 0.008 70);
+  --signal: oklch(0.65 0.17 50);
+  --signal-ink: oklch(0.15 0.02 50);
+  --ok: oklch(0.45 0.12 150);
+  --low: oklch(0.5 0.14 50);
+  --error: oklch(0.5 0.19 25);
+  --ink-on-plate: oklch(0.82 0.01 80);
+  --shadow: 0 18px 32px -20px rgb(30 30 40 / 0.45);
+  --stage-bg: radial-gradient(ellipse 85% 75% at 64% 60%, #fafafa 0%, #e9eaec 58%, #d6d8dc 100%);
+  --stage-fog: #dfe0e3;
+  --stage-edge: rgb(214 216 220 / 0.7);
+  --stage-text-shade: rgb(244 244 246 / 0.7);
+  --plate: #2d261e;
+  --plate-line: rgb(226 196 138 / 0.3);
+}
