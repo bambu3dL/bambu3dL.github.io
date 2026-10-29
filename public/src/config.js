@@ -21,7 +21,7 @@ export const SITE = {
   // Modulo di contatto: URL dell'app web di Apps Script (finisce con /exec). Vuoto = invio simulato.
   // È un indirizzo pubblico per natura, non un segreto.
   backend: {
-    quoteEndpoint: '',
+    quoteEndpoint: 'https://script.google.com/macros/s/AKfycbxc_T7qkZ8C3Sywf6fBIfNPGLTNd8z0ceTt7FB1nzFt3OrIvKgiIVXy1k8tJAkPzoU4vA/exec',
   },
 };
 
