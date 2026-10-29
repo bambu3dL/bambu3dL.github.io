@@ -164,7 +164,7 @@
         "url": "assets/models/escher-mvu1vlos.s3dm"
       },
       "materialId": "pla-girasole",
-      "estimatedG": 100,
+      "estimatedG": 6,
       "dimensionsMm": [
         23,
         18,
