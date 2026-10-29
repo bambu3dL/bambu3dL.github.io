@@ -103,15 +103,17 @@ export class TimelapseService {
 
   async #start(thumb, { loop }) {
     await this.#ensureStage();
-    // Nel frattempo il mouse può essere uscito: in quel caso non c'è più niente da animare.
-    if (loop && thumb.closest('[data-timelapse-host]') !== this.#host) return;
-    if (this.#current) return;
     let shape;
     try {
       shape = JSON.parse(thumb.dataset.shape);
     } catch {
       return;
     }
+    // I modelli veri vanno scaricati prima di disegnarli (nella galleria lo sono già: qui costa niente).
+    await (await import('./PrintGeometry.js')).preloadShapes([shape]);
+    // Nel frattempo il mouse può essere uscito: in quel caso non c'è più niente da animare.
+    if (loop && thumb.closest('[data-timelapse-host]') !== this.#host) return;
+    if (this.#current) return;
     const live = thumb.querySelector('.thumb-live');
     const rect = thumb.getBoundingClientRect();
     if (!live || rect.width < 10) return;

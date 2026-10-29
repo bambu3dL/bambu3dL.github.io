@@ -7,6 +7,7 @@ export class SnapshotService {
   #cache = new Map();
   #size = 720;
   #PrintStage = null;
+  #geometry = null;
   #supported = null;
 
   get supported() {
@@ -18,6 +19,14 @@ export class SnapshotService {
   async load() {
     if (!this.supported || this.#PrintStage) return;
     this.#PrintStage = (await import('./PrintStage.js')).PrintStage;
+    this.#geometry = await import('./PrintGeometry.js');
+  }
+
+  /** Scarica i modelli veri delle realizzazioni che si stanno per disegnare: le miniature sono sincrone e li vogliono già pronti. */
+  async prepare(works) {
+    await this.load();
+    if (!this.#geometry) return;
+    await this.#geometry.preloadShapes(works.map((work) => work.shape));
   }
 
   /** Il campione di un materiale: tre gradini stampati, visti dall'alto. */

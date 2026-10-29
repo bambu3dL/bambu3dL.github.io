@@ -152,7 +152,21 @@ export function checkFamily(input) {
 
 /* ---------- Opere ---------- */
 
+/** La forma che dice "questo oggetto ha un modello vero": non è tra le forme di esempio (SHAPES), il file sta in `url`. */
+export const MODEL_KIND = 'model';
+
+// Densità tipiche (g/cm³) e quota di materiale che resta dopo parete e riempimento di una stampa tipica (15-20%):
+// bastano per proporre un valore, da correggere con quello dello slicer.
+const DENSITY = Object.freeze({ PLA: 1.24, PETG: 1.27, ABS: 1.04, ASA: 1.07, TPU: 1.21, PA: 1.14, PC: 1.2 });
+export const FILL_FACTOR = 0.35;
+
+/** Grammi stimati da un volume in cm³. Solo una proposta di partenza. */
+export function estimateGrams(volumeCm3, family) {
+  return Math.max(1, Math.round(Number(volumeCm3) * (DENSITY[String(family).toUpperCase()] ?? 1.25) * FILL_FACTOR));
+}
+
 export function shapeFrom(kind, values = {}) {
+  if (kind === MODEL_KIND) return { kind, url: text(values.url) };
   const preset = SHAPES[kind];
   const shape = { kind, ...preset.fixed };
   preset.fields.forEach((field) => {
@@ -162,7 +176,7 @@ export function shapeFrom(kind, values = {}) {
   return shape;
 }
 
-export function checkWork(input, { materialIds }) {
+export function checkWork(input, { materialIds, hasModel = false }) {
   const errors = {};
   if (text(input.titleIt).length < 2) errors.titleIt = 'required';
   if (text(input.summaryIt).length < 5) errors.summaryIt = 'required';
@@ -173,11 +187,14 @@ export function checkWork(input, { materialIds }) {
   const filled = dims.filter(Boolean).length;
   if (filled !== 0 && (filled !== 3 || dims.some((value) => !(number(value) > 0 && number(value) <= 2000)))) errors.dimensions = 'dimensions';
   if (!DATE.test(text(input.date)) || Number.isNaN(new Date(text(input.date)).getTime())) errors.date = 'date';
-  if (!Object.hasOwn(SHAPES, text(input.kind))) errors.kind = 'kind';
+  const kind = text(input.kind);
+  if (kind === MODEL_KIND) {
+    if (!hasModel) errors.model = 'model';
+  } else if (!Object.hasOwn(SHAPES, kind)) errors.kind = 'kind';
   return errors;
 }
 
-export function workRecord(input, id, { photo = '' } = {}) {
+export function workRecord(input, id, { photo = '', modelPath = '' } = {}) {
   const title = { it: text(input.titleIt) };
   if (text(input.titleEn)) title.en = text(input.titleEn);
   const summary = { it: text(input.summaryIt) };
@@ -186,7 +203,7 @@ export function workRecord(input, id, { photo = '' } = {}) {
   return {
     id,
     date: text(input.date),
-    shape: shapeFrom(text(input.kind), input.shape),
+    shape: shapeFrom(text(input.kind), text(input.kind) === MODEL_KIND ? { url: modelPath } : input.shape),
     materialId: text(input.materialId),
     estimatedG: Math.round(number(input.estimatedG)),
     ...(dims.every(Boolean) ? { dimensionsMm: dims.map((value) => Math.round(number(value))) } : {}),

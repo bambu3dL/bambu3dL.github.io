@@ -1,4 +1,5 @@
 import {
+  MODEL_KIND,
   ValidationError,
   applyStockChange,
   checkFamily,
@@ -137,29 +138,40 @@ export class CatalogAdmin {
 
   /* ---------- Oggetti (le opere in vetrina) ---------- */
 
-  /** `photo` è { base64 } di un JPEG già ridimensionato; `removePhoto` toglie quella esistente. */
-  async saveWork(input, { id = null, photo = null, removePhoto = false } = {}) {
+  /**
+   * `photo` è { base64 } di un JPEG già ridimensionato; `removePhoto` toglie quella esistente.
+   * `model` è { base64 } di un file .s3dm (vedi ModelImporter): se manca e l'oggetto ha già un modello, resta quello.
+   */
+  async saveWork(input, { id = null, photo = null, removePhoto = false, model = null } = {}) {
     const { data: materialData } = await this.#materialsFile();
     const { data, sha } = await this.#worksFile();
-    const errors = checkWork(input, { materialIds: new Set(materialData.materials.map((item) => item.id)) });
-    if (Object.keys(errors).length) throw new ValidationError(errors);
-
     const index = id ? data.works.findIndex((item) => item.id === id) : -1;
     if (id && index < 0) throw new ValidationError({ id: 'missing' });
+    const previousModel = index >= 0 && data.works[index].shape?.kind === MODEL_KIND ? data.works[index].shape.url ?? '' : '';
+    const errors = checkWork(input, { materialIds: new Set(materialData.materials.map((item) => item.id)), hasModel: Boolean(model) || Boolean(previousModel) });
+    if (Object.keys(errors).length) throw new ValidationError(errors);
+
     const recordId = id ?? uniqueId(slugify(input.titleIt), new Set(data.works.map((item) => item.id)));
     const previous = index >= 0 ? data.works[index].photo ?? '' : '';
+
+    let modelPath = String(input.kind).trim() === MODEL_KIND ? previousModel : '';
+    if (model && String(input.kind).trim() === MODEL_KIND) {
+      modelPath = `assets/models/${recordId}-${Date.now().toString(36)}.s3dm`;
+      await this.#gateway.writeFile(modelPath, model.base64, { message: `Admin: modello 3D di ${input.titleIt}` });
+    }
 
     let photoPath = removePhoto ? '' : previous;
     if (photo) {
       photoPath = `assets/uploads/${recordId}-${Date.now().toString(36)}.jpg`;
       await this.#gateway.writeFile(photoPath, photo.base64, { message: `Admin: foto di ${input.titleIt}` });
     }
-    const record = workRecord(input, recordId, { photo: photoPath });
+    const record = workRecord(input, recordId, { photo: photoPath, modelPath });
     if (index >= 0) data.works[index] = record;
     else data.works.push(record);
     await this.#gateway.writeJson(FILES.works, data, { sha, message: `Admin: ${index >= 0 ? 'aggiorna' : 'aggiungi'} l’oggetto ${record.title.it}` });
 
     if (previous && previous !== photoPath) await this.#removeQuietly(previous, `Admin: toglie la vecchia foto di ${record.title.it}`);
+    if (previousModel && previousModel !== modelPath) await this.#removeQuietly(previousModel, `Admin: toglie il vecchio modello 3D di ${record.title.it}`);
     return record;
   }
 
@@ -170,6 +182,7 @@ export class CatalogAdmin {
     data.works = data.works.filter((item) => item.id !== id);
     await this.#gateway.writeJson(FILES.works, data, { sha, message: `Admin: elimina l’oggetto ${work.title.it}` });
     if (work.photo) await this.#removeQuietly(work.photo, `Admin: toglie la foto di ${work.title.it}`);
+    if (work.shape?.kind === MODEL_KIND && work.shape.url) await this.#removeQuietly(work.shape.url, `Admin: toglie il modello 3D di ${work.title.it}`);
   }
 
   /* ---------- Bobine ---------- */

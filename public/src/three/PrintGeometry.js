@@ -6,13 +6,39 @@ import {
   Shape,
   ExtrudeGeometry,
 } from '../../assets/vendor/three/three.module.min.js';
+import { loadModelGeometry } from './ModelGeometry.js';
 
-// Generatori di forme di esempio: servono finché non ci sono modelli STL/3MF reali.
+// Le geometrie delle stampe: le forme di esempio (generate qui) e i modelli veri caricati dall'area riservata
+// (file .s3dm, vedi core/mesh.js). Un modello arriva dalla rete, quindi va caricato prima con preloadShapes().
 // Ogni generatore restituisce una geometria con l'asse Y verso l'alto, centrata e normalizzata
 // (estensione massima = 1), più `userData` con l'intervallo verticale e se il pezzo è pieno.
 
 const TAU = Math.PI * 2;
 const cache = new Map();
+const models = new Map(); // forma "model" -> geometria grezza (asse Y verso l'alto) già scaricata, oppure null se non si è potuta caricare
+
+/** Mette a disposizione un modello già in memoria (l'anteprima dell'area riservata, prima di salvarlo). */
+export function registerModel(shape, geometry) {
+  const key = JSON.stringify(shape);
+  cache.delete(key);
+  models.set(key, geometry);
+}
+
+/**
+ * Scarica i modelli veri tra le forme date. Va chiamata (e attesa) prima di disegnarle: buildPrintGeometry è sincrona.
+ * Un modello che non si carica non rompe la pagina: al suo posto si disegna un campione piatto.
+ */
+export async function preloadShapes(shapes) {
+  await Promise.all(shapes.filter((shape) => shape?.kind === 'model' && !models.has(JSON.stringify(shape))).map(async (shape) => {
+    const key = JSON.stringify(shape);
+    try {
+      models.set(key, await loadModelGeometry(shape.url));
+    } catch (error) {
+      console.warn('Modello non caricato', shape.url, error);
+      models.set(key, null);
+    }
+  }));
+}
 
 function smoothstep(a, b, x) {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -186,9 +212,17 @@ const GENERATORS = { twistVase, honeycomb, gear, chip };
 export function buildPrintGeometry(shape) {
   const key = JSON.stringify(shape);
   if (cache.has(key)) return cache.get(key);
-  const generator = GENERATORS[shape.kind];
-  if (!generator) throw new Error(`Forma sconosciuta: ${shape.kind}`);
-  const { geometry, solid } = generator(shape);
+  let built;
+  if (shape.kind === 'model') {
+    const model = models.get(key);
+    // I modelli veri sono solidi chiusi: dentro il taglio si vede il riempimento.
+    built = model ? { geometry: model, solid: true } : chip();
+  } else {
+    const generator = GENERATORS[shape.kind];
+    if (!generator) throw new Error(`Forma sconosciuta: ${shape.kind}`);
+    built = generator(shape);
+  }
+  const { geometry, solid } = built;
   geometry.computeBoundingBox();
   const box = geometry.boundingBox;
   const size = { x: box.max.x - box.min.x, y: box.max.y - box.min.y, z: box.max.z - box.min.z };
@@ -205,6 +239,7 @@ export function buildPrintGeometry(shape) {
     center: [(box.min.x + box.max.x) / 2, (box.min.y + box.max.y) / 2, (box.min.z + box.max.z) / 2],
     extent,
   };
-  cache.set(key, geometry);
+  // Un modello non ancora scaricato non si memorizza: quando arriverà (preloadShapes) si userà quello vero.
+  if (shape.kind !== 'model' || models.has(key)) cache.set(key, geometry);
   return geometry;
 }

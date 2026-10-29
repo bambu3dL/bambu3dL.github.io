@@ -19,6 +19,7 @@ export class WorkController extends PageController {
     const { works, materials, estimator, snapshots, i18n } = this.#deps;
     const t = i18n.t.bind(i18n);
     const [work, allMaterials] = await Promise.all([works.byId(params.id), materials.all(), snapshots.load()]);
+    if (work) await snapshots.prepare([work]);
     const material = work ? allMaterials.find((item) => item.id === work.materialId) : null;
     if (!work || !material) {
       renderInto(outlet, notFoundView({ t }));

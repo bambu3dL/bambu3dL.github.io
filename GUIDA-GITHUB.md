@@ -96,8 +96,18 @@ Da quel momento, su quel dispositivo, basta la password. Per collegare un altro 
 | **File** | I modelli su Google Drive: scegli la **Libreria** (file tuoi) o la cartella di una richiesta, vedi i file (anche quelli che il cliente ha allegato dal modulo), **carichi** altri file (STL, 3MF, STEP, IGES, OBJ, DWG, DXF e altri CAD, fino a 5 alla volta) e puoi metterli nel **cestino** di Drive |
 | **Fili** | Il catalogo: famiglia (PLA, PETG…), colore, marca, peso nominale di una bobina. Alla creazione puoi aggiungere subito le bobine. Qui anche i testi delle famiglie |
 | **Bobine** | I pezzi fisici di ogni filo: aggiungi una bobina (nuova o iniziata), regola i grammi, segnala finita o riaprila, eliminala. **"Ho stampato un oggetto"** toglie i grammi stimati partendo dalla bobina più vecchia e passa alla successiva quando si svuota. **"Ho usato dei grammi"** fa lo stesso scrivendo tu i grammi (una prova, uno scarto, una stampa fuori vetrina), senza scegliere un oggetto. Registro dei movimenti |
-| **Oggetti** | Le realizzazioni in vetrina: titoli e descrizioni IT/EN, filo, grammi, misure, forma 3D di esempio, **foto della stampa** (ridotta a 1400 px e compressa prima di caricarla, senza i dati nascosti come la posizione), visibile o nascosto |
+| **Oggetti** | Le realizzazioni in vetrina: titoli e descrizioni IT/EN, filo, grammi, misure, **modello 3D da file STL o 3MF** (vedi sotto), **foto della stampa** (ridotta a 1400 px e compressa prima di caricarla, senza i dati nascosti come la posizione), visibile o nascosto |
 | **Impostazioni** | Nome del sito ed email di contatto; link alla cronologia delle modifiche |
+
+**Pubblicare una realizzazione da un file STL o 3MF.** In **Oggetti → Aggiungi un oggetto** lascia "Modello da file (STL o 3MF)" e scegli il file:
+1. Il file viene letto **nel tuo browser** (non esce dal PC finché non salvi). Il sito lo riduce a una versione leggera, al massimo 150.000 triangoli, e ti mostra l'anteprima 3D: controlla che il pezzo sia dritto, come lo stampi.
+2. Compila da solo **misure** (da Larghezza a Altezza, in mm) e **grammi**. Con un 3MF già affettato da Bambu Studio o Orca prende i grammi dello slicer, che sono quelli giusti; con un STL (o un 3MF non affettato) li stima dal volume, e vanno corretti con il valore del tuo slicer. Se scrivi i grammi a mano, il sito non li cambia più.
+3. Scegli il filo (il colore dell'anteprima segue il filo), scrivi titolo e descrizione e **Salva**. Dopo 1–2 minuti il sito mostra il tuo pezzo, ruotabile, con la miniatura animata e il calcolo dei grammi.
+4. Per cambiare il modello scegli un altro file: il vecchio viene tolto dal repository. Se elimini l'oggetto, va via anche il suo modello.
+
+**Attenzione: la versione ridotta del modello è pubblica**, perché sta nel repository e il sito la scarica. Chiunque, volendo, potrebbe recuperarla. Non pubblicare modelli di clienti o coperti da diritti. I file originali restano solo da te (e in Drive, se li carichi da **File**).
+
+I formati letti sono STL (binario e ASCII) e 3MF (anche quelli di Bambu Studio con più oggetti). Con un 3MF a più piastre si vedono tutti gli oggetti insieme. Il file non può superare i 120 MB né i 2 metri di ingombro; il modello pubblicato pesa di solito meno di 2 MB.
 
 **Fili e bobine, in breve.** Un *filo* è una voce del catalogo ("PLA · Rosso lampone"); una *bobina* è un pezzo fisico di quel filo. Un filo può avere più bobine e il suo residuo è la somma di quelle in uso. Una bobina a zero grammi si chiude da sola; una bobina chiusa non conta nel residuo mostrato nel sito.
 
@@ -207,6 +217,9 @@ I file senza una richiesta vanno nella sottocartella **Libreria**, che lo script
 | **File**: "Uno dei file ha un formato non ammesso" | Il formato non è nell'elenco (ad esempio un PDF o un ZIP) | Carica solo modelli e CAD; per altro usa Drive direttamente |
 | **File**: l'elenco o il caricamento non funzionano dopo un aggiornamento | Lo script ha ancora il vecchio codice | Incolla il nuovo `Code.gs` e fai una **nuova versione** del deployment (passo 8.10) |
 | **File**: "Questa richiesta o questo file non esiste più" | La cartella è stata spostata o cancellata su Drive | Aggiorna la pagina; se serve, ripristinala dal cestino di Drive |
+| **Oggetti**: "Non riesco a leggere questo file" | File danneggiato, o un formato che non è davvero STL/3MF | Riesporta il modello dal programma di modellazione |
+| **Oggetti**: il pezzo nell'anteprima è sdraiato o capovolto | L'orientamento nel file non è quello di stampa | Riesporta il modello orientato come lo stampi (Z verso l'alto) |
+| **Oggetti**: dopo il salvataggio il sito mostra un blocco piatto al posto del pezzo | Il file del modello non è ancora online o è stato tolto | Attendi 1–2 minuti; se resta, ricarica il modello |
 | Le email non arrivano | Quota Gmail, spam, o `OWNER_EMAILS` vuoto | Controlla lo spam e **Esecuzioni** |
 
 ## 12. Se il token finisce in mani sbagliate

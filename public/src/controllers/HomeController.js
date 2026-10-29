@@ -21,11 +21,13 @@ export class HomeController extends PageController {
   async mount({ outlet }) {
     const { works, materials, estimator, snapshots, timelapse, i18n } = this.#deps;
     const [allWorks, allMaterials] = await Promise.all([works.all(), materials.all(), snapshots.load()]);
+    await snapshots.prepare(allWorks);
     const byId = new Map(allMaterials.map((material) => [material.id, material]));
 
     const pairs = allWorks.map((work) => ({ work, material: byId.get(work.materialId) })).filter((pair) => pair.material);
     // L'hero stampa un vaso: il primo oggetto a spirale dell'elenco, altrimenti il più recente.
-    const hero = pairs.find((pair) => pair.work.shape.kind === 'twistVase') ?? pairs[0];
+    // Il palco dell'hero ricalca il vaso: se non c'è si preferisce una forma di esempio a un modello vero.
+    const hero = pairs.find((pair) => pair.work.shape.kind === 'twistVase') ?? pairs.find((pair) => pair.work.shape.kind !== 'model') ?? pairs[0];
     const ledger = pairs.slice(0, LEDGER_COUNT).map(({ work, material }) => ({
       work,
       material,

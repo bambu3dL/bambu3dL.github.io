@@ -557,6 +557,10 @@
 .spool-group + .spool-group { margin-top: var(--s-4); }
 .spool-group-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
 .spool-none { padding-left: var(--s-2); }
+/* Anteprima del modello nel modulo di un oggetto */
+.admin-model { display: grid; gap: var(--s-4); }
+.admin-model-frame { width: min(100%, 24rem); }
+.admin-model [data-model-stats] { white-space: pre-line; }
 .admin-row.is-finished { opacity: 0.6; }
 .admin-row .admin-row-actions { flex-wrap: wrap; justify-content: flex-end; }
 

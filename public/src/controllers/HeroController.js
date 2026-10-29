@@ -60,7 +60,8 @@ export class HeroController {
       return;
     }
     try {
-      const { BedScene } = await import('../three/BedScene.js');
+      const [{ BedScene }, { preloadShapes }] = await Promise.all([import('../three/BedScene.js'), import('../three/PrintGeometry.js')]);
+      await preloadShapes([this.#work.shape]);
       if (this.#disposed) return;
       this.#scene = new BedScene(this.#canvas, { filamentHex: this.#material.hex, shape: this.#work.shape });
     } catch {

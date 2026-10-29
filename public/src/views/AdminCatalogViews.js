@@ -171,6 +171,7 @@ export function worksListView({ works, materialsById }) {
               <span class="admin-tags">
                 ${work.visible === false ? html`<span class="admin-tag">${A.works.hidden}</span>` : ''}
                 ${work.photo ? html`<span class="admin-tag">${A.works.hasPhoto}</span>` : ''}
+                ${work.shape?.kind === 'model' ? html`<span class="admin-tag">${A.works.hasModel}</span>` : ''}
               </span>
               <a class="btn btn-ghost btn-small" href="/admin/works/${work.id}">${A.common.edit}</a>
             </li>`;
@@ -188,9 +189,9 @@ function shapeFields(kind, shape) {
 
 export function workFormView({ work, materials, today }) {
   const editing = work !== null;
-  const value = work ?? { title: { it: '' }, summary: { it: '' }, materialId: '', estimatedG: '', dimensionsMm: [], date: today, shape: { kind: 'twistVase' }, visible: true };
+  const value = work ?? { title: { it: '' }, summary: { it: '' }, materialId: '', estimatedG: '', dimensionsMm: [], date: today, shape: { kind: 'model' }, visible: true };
   const [dimW = '', dimD = '', dimH = ''] = value.dimensionsMm ?? [];
-  const kind = value.shape.kind in SHAPES ? value.shape.kind : 'twistVase';
+  const kind = value.shape.kind === 'model' || value.shape.kind in SHAPES ? value.shape.kind : 'model';
   return html`
     <section class="page-head">
       <a class="back-link" href="/admin/works">${A.works.form.back}</a>
@@ -251,10 +252,21 @@ export function workFormView({ work, materials, today }) {
         <fieldset class="field admin-shape">
           <legend>${A.works.form.shape}</legend>
           <select name="kind" aria-label="${A.works.form.shape}" data-shape-kind aria-describedby="kind-error">
-            ${Object.keys(SHAPES).map((key) => html`<option value="${key}" ${key === kind ? 'selected' : ''}>${A.works.form.shapes[key]}</option>`)}
+            ${['model', ...Object.keys(SHAPES)].map((key) => html`<option value="${key}" ${key === kind ? 'selected' : ''}>${A.works.form.shapes[key]}</option>`)}
           </select>
           ${errorSlot('kind')}
           <p class="field-hint">${A.works.form.shapeHint}</p>
+          <div class="admin-shape-fields admin-model" data-shape-fields="model" ${kind === 'model' ? '' : 'hidden'}>
+            ${editing && value.shape.kind === 'model' ? html`<p class="muted">${A.works.model.current}</p>` : ''}
+            <div class="work-frame admin-model-frame" data-model-frame hidden><div class="viewer" data-model-viewer></div></div>
+            <div class="field">
+              <label for="w-model">${A.works.model.file}</label>
+              <input id="w-model" name="modelFile" type="file" accept=".stl,.3mf" aria-describedby="w-model-hint model-error">
+              <p class="field-hint" id="w-model-hint">${A.works.model.hint}</p>
+              ${errorSlot('model')}
+            </div>
+            <p class="admin-fixed" data-model-stats aria-live="polite"></p>
+          </div>
           ${Object.keys(SHAPES).map((key) => html`<div class="admin-shape-fields" data-shape-fields="${key}" ${key === kind ? '' : 'hidden'}>${shapeFields(key, value.shape)}</div>`)}
         </fieldset>
 

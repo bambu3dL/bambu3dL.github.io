@@ -1,9 +1,16 @@
-// Una realizzazione in vetrina. `shape` descrive la geometria di esempio finché non ci sono modelli reali.
+// Un modello vero si legge solo dalla cartella dei modelli del sito: il percorso arriva dai dati, non lo si segue alla cieca.
+const MODEL_PATH = /^assets\/models\/[\w.-]+\.s3dm$/;
+function safeShape(shape) {
+  if (shape?.kind !== 'model') return shape;
+  return MODEL_PATH.test(String(shape.url)) ? { kind: 'model', url: `/${shape.url}` } : { kind: 'chip' };
+}
+
+// Una realizzazione in vetrina. `shape` è una forma di esempio oppure { kind: 'model', url } per un modello vero (STL/3MF ridotto).
 export class Work {
   constructor({ id, date, shape, materialId, estimatedG, dimensionsMm, title, summary, photo = '', visible = true }) {
     this.id = id;
     this.date = new Date(date);
-    this.shape = shape;
+    this.shape = safeShape(shape);
     this.materialId = materialId;
     this.estimatedG = Math.max(0, Number(estimatedG) || 0);
     this.dimensionsMm = dimensionsMm || [];

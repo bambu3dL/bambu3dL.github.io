@@ -26,6 +26,7 @@ export class GalleryController extends PageController {
   async mount({ outlet }) {
     const { works, materials, snapshots } = this.#deps;
     const [allWorks, allMaterials] = await Promise.all([works.all(), materials.all(), snapshots.load()]);
+    await snapshots.prepare(allWorks);
     const byId = new Map(allMaterials.map((material) => [material.id, material]));
     this.#rows = allWorks
       .map((work) => ({ work, material: byId.get(work.materialId) }))
