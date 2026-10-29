@@ -37,11 +37,13 @@ import { createPrintMaterial } from './PrintMaterial.js';
 
 const DEG = Math.PI / 180;
 const PLATE = 25.6; // piatto 256 x 256 mm
-// L'oggetto si ingrandisce finché la sua impronta occupa questa quota del lato del piatto (poi non supera l'altezza utile della macchina).
+// L'oggetto si ingrandisce finché la sua impronta occupa questa quota del lato del piatto. La camera NON cambia: il piatto resta
+// grande sullo schermo come prima e a crescere è l'oggetto. L'altezza massima tiene tutto l'oggetto in quadro quando la camera si allontana.
 const FOOTPRINT_SHARE = 0.75;
-const MAX_PRINT_HEIGHT = 25.6;
-// L'altezza di riferimento con cui sono tarati camera e luci: con oggetti più alti o più bassi si scalano insieme.
-const REFERENCE_HEIGHT = 16;
+const MAX_PRINT_HEIGHT = 20;
+const REFERENCE_HEIGHT = 16; // l'altezza con cui era tarata la scena, quando l'oggetto era alto 16 cm
+// Larghezza (metà) da tenere in quadro sugli schermi stretti: dipende dal piatto, non dall'oggetto.
+const FIT_HALF_WIDTH = 0.5 * REFERENCE_HEIGHT;
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
 const lerp = (a, b, t) => a + (b - a) * t;
 const smooth = (t) => t * t * (3 - 2 * t);
@@ -137,6 +139,7 @@ export class BedScene {
   #camera = new PerspectiveCamera(30, 1, 0.1, 500);
   #world = new Group();
   #vase;
+  #footprint = { side: 1, diagonal: 1 };
   #printScale = 1; // da unità normalizzate della geometria a centimetri nella scena
   #printHeight = REFERENCE_HEIGHT;
   #plane = new Plane();
@@ -253,14 +256,30 @@ export class BedScene {
     this.#vase = new Mesh(this.#geometry, material);
     // Impronta a terra (il lato maggiore tra larghezza e profondità) = 75% del piatto; il resto cresce in proporzione.
     const { boundingBox } = this.#geometry;
-    const footprint = Math.max(boundingBox.max.x - boundingBox.min.x, boundingBox.max.z - boundingBox.min.z, 1e-6);
-    this.#printScale = Math.min((PLATE * FOOTPRINT_SHARE) / footprint, MAX_PRINT_HEIGHT / spanY);
-    this.#printHeight = spanY * this.#printScale;
-    this.#vase.scale.setScalar(this.#printScale);
-    this.#vase.position.y = -minY * this.#printScale;
+    const sizeX = boundingBox.max.x - boundingBox.min.x;
+    const sizeZ = boundingBox.max.z - boundingBox.min.z;
+    this.#footprint = { side: Math.max(sizeX, sizeZ, 1e-6), diagonal: Math.max(Math.hypot(sizeX, sizeZ), 1e-6) };
+    this.#fitObject();
     this.#vase.castShadow = true;
     this.#vase.receiveShadow = true;
     this.#world.add(this.#vase);
+  }
+
+  /**
+   * La scala dell'oggetto: l'impronta occupa il 75% del lato del piatto (e non supera l'altezza utile). Su uno schermo stretto
+   * la camera non si sposta, quindi l'oggetto, ruotando, potrebbe uscire di lato: lì lo si limita perché stia sempre in quadro.
+   */
+  #fitObject() {
+    const { spanY, minY } = this.#geometry.userData;
+    const visibleWidth = this.#aspect < 1 ? 2 * FIT_HALF_WIDTH * 1.35 : Infinity; // quanto è larga la scena a quella distanza, in cm
+    this.#printScale = Math.min(
+      (PLATE * FOOTPRINT_SHARE) / this.#footprint.side,
+      MAX_PRINT_HEIGHT / spanY,
+      (visibleWidth * 0.95) / this.#footprint.diagonal,
+    );
+    this.#printHeight = spanY * this.#printScale;
+    this.#vase.scale.setScalar(this.#printScale);
+    this.#vase.position.y = -minY * this.#printScale;
   }
 
   /** Ugello, blocco riscaldatore, dissipatore e la cappa della ventola, con il filamento che sale. */
@@ -316,6 +335,7 @@ export class BedScene {
     this.#width = Math.max(1, width);
     this.#height = Math.max(1, height);
     this.#aspect = this.#width / this.#height;
+    if (this.#vase) this.#fitObject();
     this.#renderer.setPixelRatio(pixelRatio);
     this.#renderer.setSize(this.#width, this.#height, false);
     this.#camera.aspect = this.#aspect;
@@ -328,8 +348,7 @@ export class BedScene {
    */
   render(t, q) {
     const y = this.#printHeight * t;
-    // Camera e luci sono tarate su un oggetto alto 16 cm: un oggetto più alto o più basso sposta tutto in proporzione.
-    const k = Math.max(0.6, this.#printHeight / REFERENCE_HEIGHT);
+
 
     // L'ugello gira lungo la parete del vaso: la modalità vaso è una sola spirale continua.
     const angle = t * Math.PI * 2 * 150;
@@ -341,7 +360,7 @@ export class BedScene {
     const tipX = ((Math.cos(angle) * raw - originX) / divisor) * scale;
     const tipZ = ((Math.sin(angle) * raw - originZ) / divisor) * scale;
     const tip = new Vector3(tipX, y + 0.12, tipZ);
-    const parked = new Vector3(13 * k, this.#printHeight + 9, -3);
+    const parked = new Vector3(13, this.#printHeight + 9, -3);
     tip.lerp(parked, smooth(q));
     this.#toolhead.position.copy(tip);
     this.#tipLight.position.set(tip.x, tip.y + 0.5, tip.z);
@@ -354,9 +373,9 @@ export class BedScene {
     const pull = smooth(q);
     const azimuth = lerp(16, 46, t) + pull * 12;
     const elevation = lerp(8, 15, t) + pull * 9;
-    const aspectFit = (2 * Math.max(0.5, raw) * scale * 1.35) / (Math.min(1, this.#aspect) * 2 * Math.tan(15 * DEG));
-    const distance = Math.max(lerp(14.5, 25, t) * k, aspectFit) + pull * 18 * k;
-    const lookY = lerp(lerp(2.2, y * 0.82 + 1.2, clamp01(t * 1.2)), this.#printHeight * 0.55, pull);
+    const aspectFit = (2 * FIT_HALF_WIDTH * 1.35) / (Math.min(1, this.#aspect) * 2 * Math.tan(15 * DEG));
+    const distance = Math.max(lerp(14.5, 25, t), aspectFit) + pull * 18;
+    const lookY = lerp(lerp(2.2, y * 0.82 + 1.2, clamp01(t * 1.2)), Math.max(5, this.#printHeight * 0.55), pull);
     this.#lookAt.set(0, lookY, 0);
     const a = azimuth * DEG;
     const e = elevation * DEG;
