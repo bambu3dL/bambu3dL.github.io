@@ -4,10 +4,7 @@
   "home": {
     "hero": "escher",
     "featured": [
-      "escher",
-      "vaso-torsione",
-      "nido-ape",
-      "vaso-onda"
+      "escher"
     ]
   }
 }
