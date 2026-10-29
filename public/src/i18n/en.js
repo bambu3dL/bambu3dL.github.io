@@ -16,6 +16,7 @@ export default {
     about: 'About us',
     quote: 'Contact',
     privacy: 'Privacy',
+    admin: 'Admin area',
   },
   title: {
     home: 'Custom 3D printing',
@@ -109,6 +110,8 @@ export default {
     photoCaption: 'The printed object.',
     noWebgl: 'This browser can’t show 3D: here’s a preview.',
     material: 'Material',
+    colors: 'Colours',
+    multiColor: '{n} colours',
     size: 'Size',
     weight: 'Weight',
     stockTitle: 'Filament: estimate and stock',

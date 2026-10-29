@@ -315,7 +315,7 @@ function rowToContact(row) {
 function adminAction(p) {
   const refused = checkAdminKey(p.key);
   if (refused) return reply({ ok: false, error: refused });
-  if (p.action === 'files' || p.action === 'upload' || p.action === 'trash') return driveAction(p);
+  if (p.action === 'files' || p.action === 'upload' || p.action === 'trash' || p.action === 'download') return driveAction(p);
   const sheet = requestsSheet();
   if (!sheet) return reply({ ok: false, error: 'not_configured' });
   const values = sheet.getDataRange().getValues();
@@ -423,6 +423,18 @@ function describeFiles(folder) {
 function driveAction(p) {
   const root = rootFolder();
   if (!root) return reply({ ok: false, error: 'not_configured' });
+
+  if (p.action === 'download') {
+    // Serve a scegliere un modello già su Drive quando si crea un oggetto: il contenuto va al browser dell'admin, che lo legge e lo riduce.
+    const id = text(p.fileId);
+    if (!/^[A-Za-z0-9_-]{10,}$/.test(id)) return reply({ ok: false, error: 'bad_request' });
+    let file;
+    try { file = DriveApp.getFileById(id); } catch (error) { return reply({ ok: false, error: 'not_found' }); }
+    if (!isManagedFile(file, root)) return reply({ ok: false, error: 'not_found' });
+    if (EXTENSIONS.indexOf(extensionOf(file.getName())) < 0) return reply({ ok: false, error: 'files_type' });
+    if (file.getSize() > LIMITS.maxFileBytes) return reply({ ok: false, error: 'files_size' });
+    return reply({ ok: true, name: file.getName(), data: Utilities.base64Encode(file.getBlob().getBytes()) });
+  }
 
   if (p.action === 'trash') {
     const id = text(p.fileId);

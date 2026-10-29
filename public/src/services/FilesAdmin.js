@@ -24,4 +24,10 @@ export class FilesAdmin {
   trash(fileId) {
     return this.#gateway.trashFile(fileId);
   }
+
+  /** Il contenuto di un file su Drive come File del browser, pronto per essere letto come se l'avessi scelto dal computer. */
+  async download(fileId) {
+    const { name, bytes } = await this.#gateway.download(fileId);
+    return new File([bytes], name);
+  }
 }

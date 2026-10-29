@@ -1,6 +1,6 @@
 import { html } from '../core/html.js';
 import { icon } from './components/icons.js';
-import { estimateCompact, materialTile, swatch, workThumb } from './components/parts.js';
+import { colorName, colorStrip, estimateCompact, materialTile, workThumb } from './components/parts.js';
 
 const LAYER_MM = 0.2;
 
@@ -9,7 +9,7 @@ function titleWords(text) {
 }
 
 function showcaseItem({ row, t, lang, i18n }) {
-  const { work, material, estimate, image } = row;
+  const { work, material, colors, estimateMaterial, estimate, image } = row;
   return html`<li class="showcase-item" data-reveal data-timelapse-host data-hex="${material.hex}">
     <a class="showcase-thumb" href="/gallery/${work.id}" tabindex="-1" aria-hidden="true">${workThumb({ work, material, image, lang })}</a>
     <div class="showcase-body">
@@ -17,8 +17,8 @@ function showcaseItem({ row, t, lang, i18n }) {
         <h3><a href="/gallery/${work.id}">${work.title(lang)}</a></h3>
       </div>
       <p>${work.summary(lang)}</p>
-      <p class="showcase-material">${swatch(material)}<span>${material.label(lang)}</span></p>
-      ${estimateCompact({ t, i18n, estimate, material })}
+      <p class="showcase-material">${colorStrip(colors)}<span>${colorName({ colors, lang, t })}</span></p>
+      ${estimateCompact({ t, i18n, estimate, material: estimateMaterial })}
       <a class="btn btn-ghost btn-small" href="/contact?work=${work.id}">${t('home.shelf.cta')}</a>
     </div>
   </li>`;
@@ -48,7 +48,7 @@ export function homeView({ t, lang, i18n, hero, ledger, materials }) {
         ${hero ? html`<dl class="hero-hud" data-hero-hud aria-hidden="true">
           <div><dt>${t('home.hud.layer')}</dt><dd><span data-hud-layer>0</span> / ${layersTotal}</dd></div>
           <div><dt>${t('home.hud.grams')}</dt><dd data-hud-grams>0 g</dd></div>
-          <div class="hud-material"><dt>${t('home.hud.material')}</dt><dd>${hero.material.label(lang)}</dd></div>
+          <div class="hud-material"><dt>${t('home.hud.material')}</dt><dd>${colorName({ colors: hero.colors, lang, t })}</dd></div>
           <span class="hud-bar" data-hud-bar></span>
         </dl>
         <p class="hero-hint"><span>${t('home.hero.hint')}</span></p>` : ''}

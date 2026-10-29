@@ -29,10 +29,10 @@ export class GalleryController extends PageController {
     await snapshots.prepare(allWorks);
     const byId = new Map(allMaterials.map((material) => [material.id, material]));
     this.#rows = allWorks
-      .map((work) => ({ work, material: byId.get(work.materialId) }))
+      .map((work) => ({ work, material: byId.get(work.materialId), colors: work.colors.map((color) => ({ material: byId.get(color.materialId), grams: color.grams })).filter((color) => color.material) }))
       .filter((row) => row.material)
       .map((row) => ({ ...row, image: snapshots.snapshot(row.work, row.material) }));
-    this.#families = [...new Set(this.#rows.map((row) => row.material.family))];
+    this.#families = [...new Set(this.#rows.flatMap((row) => row.colors.map((color) => color.material.family)))];
     this.#outlet = outlet;
     outlet.addEventListener('click', this.#onClick);
     this.#draw();
@@ -40,7 +40,7 @@ export class GalleryController extends PageController {
 
   #draw() {
     const { i18n } = this.#deps;
-    const rows = this.#family === 'all' ? this.#rows : this.#rows.filter((row) => row.material.family === this.#family);
+    const rows = this.#family === 'all' ? this.#rows : this.#rows.filter((row) => row.colors.some((color) => color.material.family === this.#family));
     renderInto(this.#outlet, galleryView({
       t: i18n.t.bind(i18n),
       lang: i18n.lang,

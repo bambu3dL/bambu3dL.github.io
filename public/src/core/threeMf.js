@@ -91,10 +91,10 @@ async function sliceInfo(zip) {
   if (!zip.has('Metadata/slice_info.config')) return null;
   const text = new TextDecoder().decode(await zip.read('Metadata/slice_info.config'));
   const plate = /<plate>([\s\S]*?)<\/plate>/.exec(text)?.[1] ?? text;
-  let grams = 0;
-  for (const match of plate.matchAll(/<filament\b[^>]*\bused_g="([\d.]+)"/g)) grams += Number(match[1]);
+  const filaments = [...plate.matchAll(/<filament\b[^>]*\bused_g="([\d.]+)"/g)].map((match) => Number(match[1])).filter((value) => value > 0);
+  const grams = filaments.reduce((sum, value) => sum + value, 0);
   const seconds = Number(/key="prediction"\s+value="(\d+)"/.exec(plate)?.[1]);
-  return grams > 0 || seconds > 0 ? { grams: grams > 0 ? grams : null, seconds: seconds > 0 ? seconds : null } : null;
+  return grams > 0 || seconds > 0 ? { grams: grams > 0 ? grams : null, filaments, seconds: seconds > 0 ? seconds : null } : null;
 }
 
 export async function parse3mf(bytes) {

@@ -93,19 +93,28 @@ Da quel momento, su quel dispositivo, basta la password. Per collegare un altro 
 |---|---|
 | **Panoramica** | Richieste da leggere, stato della pubblicazione, conteggi, fili da riordinare, scorciatoie |
 | **Contatti** | Le richieste arrivate dal modulo: elenco con filtro per stato, scheda con messaggio e file, risposta per email, stato (ricevuta, in valutazione, proposta inviata, confermata, in stampa, pronta, chiusa) e nota; eliminazione |
-| **File** | I modelli su Google Drive: scegli la **Libreria** (file tuoi) o la cartella di una richiesta, vedi i file (anche quelli che il cliente ha allegato dal modulo), **carichi** altri file (STL, 3MF, STEP, IGES, OBJ, DWG, DXF e altri CAD, fino a 5 alla volta) e puoi metterli nel **cestino** di Drive |
+| **File** | I file originali su Google Drive (qui non si pubblica niente): scegli la **Libreria** (file tuoi) o la cartella di una richiesta, vedi i file (anche quelli che il cliente ha allegato dal modulo), **carichi** altri file (STL, 3MF, STEP, IGES, OBJ, DWG, DXF e altri CAD, fino a 5 alla volta) e puoi metterli nel **cestino** di Drive |
 | **Fili** | Il catalogo: famiglia (PLA, PETG…), colore, marca, peso nominale di una bobina. Alla creazione puoi aggiungere subito le bobine. Qui anche i testi delle famiglie |
 | **Bobine** | I pezzi fisici di ogni filo: aggiungi una bobina (nuova o iniziata), regola i grammi, segnala finita o riaprila, eliminala. **"Ho stampato un oggetto"** toglie i grammi stimati partendo dalla bobina più vecchia e passa alla successiva quando si svuota. **"Ho usato dei grammi"** fa lo stesso scrivendo tu i grammi (una prova, uno scarto, una stampa fuori vetrina), senza scegliere un oggetto. Registro dei movimenti |
 | **Oggetti** | Le realizzazioni in vetrina: titoli e descrizioni IT/EN, filo, grammi, misure, **modello 3D da file STL o 3MF** (vedi sotto), **foto della stampa** (ridotta a 1400 px e compressa prima di caricarla, senza i dati nascosti come la posizione), visibile o nascosto |
 | **Impostazioni** | Nome del sito ed email di contatto; link alla cronologia delle modifiche |
 
+**File e Oggetti: la differenza.** **File** è il tuo archivio privato su Google Drive: gli allegati dei clienti, i tuoi modelli, i progetti. Non è visibile a nessuno sul sito. **Oggetti** sono le realizzazioni **pubbliche**: quelle che i visitatori vedono nella galleria, con foto, colori, grammi e modello 3D da ruotare. I due si parlano: quando crei un oggetto da un file, l’originale finisce anche su Drive, nella Libreria, e quando ne crei uno nuovo puoi scegliere il modello tra i file già presenti su Drive.
+
+**Gestire gli oggetti.**
+- **Colori:** un oggetto si può stampare in **fino a quattro colori** (le quattro bobine dell'AMS). In **Colori e grammi** scegli il filo e i grammi di ciascuno; "Aggiungi un colore" apre la riga successiva. Il primo è il principale: dà il colore al 3D e alle miniature. Il sito mostra tutti i colori e, nella scheda, controlla il magazzino di ognuno. Con un 3MF a più filamenti, i grammi di ogni filamento sono già compilati: tu scegli il filo giusto per ciascuno. Il 3D mostra il pezzo nel colore principale.
+- **Ordine:** le frecce ↑ ↓ spostano l'oggetto nell'elenco, e quell'ordine è quello della galleria sul sito. I nuovi oggetti vanno in cima.
+- **Elimina:** ogni riga ha il suo pulsante, con conferma in due tempi.
+- **Home page:** sotto l'elenco scegli **l'oggetto che si stampa scorrendo** la home (anche un modello da file) e fino a **quattro oggetti in evidenza** sotto, nell'ordine che vuoi. Se lasci tutto su "automatico" il sito sceglie da solo. **Salva la home** e dopo 1–2 minuti è online.
+- **Dal Drive:** nel modulo di un nuovo oggetto, "Scegli un file dal Drive" mostra gli STL e 3MF della Libreria o di una richiesta. Serve il collegamento ai contatti (passo 8.9) e il nuovo `Code.gs` (passo 8.10).
+
 **Pubblicare una realizzazione da un file STL o 3MF.** In **Oggetti → Aggiungi un oggetto** lascia "Modello da file (STL o 3MF)" e scegli il file:
-1. Il file viene letto **nel tuo browser** (non esce dal PC finché non salvi). Il sito lo riduce a una versione leggera, al massimo 150.000 triangoli, e ti mostra l'anteprima 3D: controlla che il pezzo sia dritto, come lo stampi.
+1. Il file viene letto **nel tuo browser** (non esce dal PC finché non salvi; se salvi, l'originale va anche su Drive, nella Libreria, se è sotto i 25 MB). Il sito lo riduce a una versione leggera, al massimo 150.000 triangoli, e ti mostra l'anteprima 3D: controlla che il pezzo sia dritto, come lo stampi.
 2. Compila da solo **misure** (da Larghezza a Altezza, in mm) e **grammi**. Con un 3MF già affettato da Bambu Studio o Orca prende i grammi dello slicer, che sono quelli giusti; con un STL (o un 3MF non affettato) li stima dal volume, e vanno corretti con il valore del tuo slicer. Se scrivi i grammi a mano, il sito non li cambia più.
 3. Scegli il filo (il colore dell'anteprima segue il filo), scrivi titolo e descrizione e **Salva**. Dopo 1–2 minuti il sito mostra il tuo pezzo, ruotabile, con la miniatura animata e il calcolo dei grammi.
 4. Per cambiare il modello scegli un altro file: il vecchio viene tolto dal repository. Se elimini l'oggetto, va via anche il suo modello.
 
-**Attenzione: la versione ridotta del modello è pubblica**, perché sta nel repository e il sito la scarica. Chiunque, volendo, potrebbe recuperarla. Non pubblicare modelli di clienti o coperti da diritti. I file originali restano solo da te (e in Drive, se li carichi da **File**).
+**Attenzione: la versione ridotta del modello è pubblica**, perché sta nel repository e il sito la scarica. Chiunque, volendo, potrebbe recuperarla. Non pubblicare modelli di clienti o coperti da diritti. I file originali restano solo da te, su Drive.
 
 I formati letti sono STL (binario e ASCII) e 3MF (anche quelli di Bambu Studio con più oggetti). Con un 3MF a più piastre si vedono tutti gli oggetti insieme. Il file non può superare i 120 MB né i 2 metri di ingombro; il modello pubblicato pesa di solito meno di 2 MB.
 
@@ -172,6 +181,8 @@ I file senza una richiesta vanno nella sottocartella **Libreria**, che lo script
 
 ---
 
+**Accesso rapido.** In fondo a ogni pagina del sito, accanto a Privacy, c'è il link **Area riservata**: porta alla pagina di accesso.
+
 ## 9. Controllo finale
 
 - [ ] `https://TUO-NOME.github.io` si apre; anche `/gallery` aperto direttamente (grazie a `404.html`) mostra la pagina giusta.
@@ -220,6 +231,8 @@ I file senza una richiesta vanno nella sottocartella **Libreria**, che lo script
 | **Oggetti**: "Non riesco a leggere questo file" | File danneggiato, o un formato che non è davvero STL/3MF | Riesporta il modello dal programma di modellazione |
 | **Oggetti**: il pezzo nell'anteprima è sdraiato o capovolto | L'orientamento nel file non è quello di stampa | Riesporta il modello orientato come lo stampi (Z verso l'alto) |
 | **Oggetti**: dopo il salvataggio il sito mostra un blocco piatto al posto del pezzo | Il file del modello non è ancora online o è stato tolto | Attendi 1–2 minuti; se resta, ricarica il modello |
+| **Oggetti**: "Scegli un file dal Drive" non compare | Mancano il collegamento ai contatti o la chiave su questo dispositivo | Collega i contatti (passo 8.9) e ricarica la pagina |
+| **Oggetti**: la scelta dal Drive dice che lo script non ha capito | Lo script ha ancora il vecchio codice | Incolla il nuovo `Code.gs` e fai una nuova versione (passo 8.10) |
 | Le email non arrivano | Quota Gmail, spam, o `OWNER_EMAILS` vuoto | Controlla lo spam e **Esecuzioni** |
 
 ## 12. Se il token finisce in mani sbagliate

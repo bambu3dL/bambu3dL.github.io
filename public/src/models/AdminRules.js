@@ -176,13 +176,37 @@ export function shapeFrom(kind, values = {}) {
   return shape;
 }
 
+/** Un oggetto si stampa in al massimo quattro colori (le quattro bobine dell'AMS), ognuno con i suoi grammi. */
+export const MAX_COLORS = 4;
+
+/**
+ * I colori di un oggetto: da `input.colors` ([{ materialId, grams }]) oppure, per i moduli semplici, dai campi
+ * `materialId` e `estimatedG`. Le righe del tutto vuote si scartano. Il primo è il colore principale.
+ */
+export function colorsFrom(input) {
+  const rows = Array.isArray(input.colors) ? input.colors : [{ materialId: input.materialId, grams: input.estimatedG }];
+  return rows
+    .map((row) => ({ materialId: text(row?.materialId), grams: row?.grams ?? '' }))
+    .filter((row) => row.materialId || text(row.grams));
+}
+
+/** I colori di un record già salvato (i vecchi record hanno solo materialId ed estimatedG). */
+export function colorsOfRecord(work) {
+  return Array.isArray(work.colors) && work.colors.length
+    ? work.colors
+    : [{ materialId: work.materialId, grams: work.estimatedG }];
+}
+
 export function checkWork(input, { materialIds, hasModel = false }) {
   const errors = {};
   if (text(input.titleIt).length < 2) errors.titleIt = 'required';
   if (text(input.summaryIt).length < 5) errors.summaryIt = 'required';
-  if (!materialIds.has(text(input.materialId))) errors.materialId = 'material';
-  const grams = number(input.estimatedG);
-  if (!Number.isFinite(grams) || grams < 1 || grams > 20000) errors.estimatedG = 'range';
+  const colors = colorsFrom(input);
+  if (colors.length === 0) errors.materialId = 'material';
+  else if (colors.length > MAX_COLORS) errors.materialId = 'colors';
+  else if (colors.some((color) => !materialIds.has(color.materialId))) errors.materialId = 'material';
+  else if (new Set(colors.map((color) => color.materialId)).size !== colors.length) errors.materialId = 'duplicate';
+  if (colors.some((color) => !(number(color.grams) >= 1 && number(color.grams) <= 20000)) || colors.length === 0) errors.estimatedG = 'range';
   const dims = [input.dimW, input.dimD, input.dimH].map(text);
   const filled = dims.filter(Boolean).length;
   if (filled !== 0 && (filled !== 3 || dims.some((value) => !(number(value) > 0 && number(value) <= 2000)))) errors.dimensions = 'dimensions';
@@ -200,12 +224,14 @@ export function workRecord(input, id, { photo = '', modelPath = '' } = {}) {
   const summary = { it: text(input.summaryIt) };
   if (text(input.summaryEn)) summary.en = text(input.summaryEn);
   const dims = [input.dimW, input.dimD, input.dimH].map(text);
+  const colors = colorsFrom(input).map((color) => ({ materialId: color.materialId, grams: Math.round(number(color.grams)) }));
   return {
     id,
     date: text(input.date),
     shape: shapeFrom(text(input.kind), text(input.kind) === MODEL_KIND ? { url: modelPath } : input.shape),
-    materialId: text(input.materialId),
-    estimatedG: Math.round(number(input.estimatedG)),
+    materialId: colors[0].materialId,
+    estimatedG: colors.reduce((sum, color) => sum + color.grams, 0),
+    ...(colors.length > 1 ? { colors } : {}),
     ...(dims.every(Boolean) ? { dimensionsMm: dims.map((value) => Math.round(number(value))) } : {}),
     title,
     summary,
@@ -241,6 +267,26 @@ export function checkUploadFiles(files) {
   if (list.some((file) => file.size > MAX_FILE_BYTES)) return { files: 'filesSize' };
   if (list.reduce((sum, file) => sum + file.size, 0) > MAX_TOTAL_BYTES) return { files: 'filesTotal' };
   return {};
+}
+
+/** La home: l'oggetto che si stampa scorrendo e fino a quattro in evidenza sotto. `featured` null = i primi quattro dell'elenco. */
+export const MAX_FEATURED = 4;
+
+export function checkHome({ hero, featured }, { workIds }) {
+  const errors = {};
+  if (text(hero) && !workIds.has(text(hero))) errors.hero = 'missing';
+  const list = Array.isArray(featured) ? featured.map(text).filter(Boolean) : [];
+  if (list.length > MAX_FEATURED) errors.featured = 'count';
+  else if (new Set(list).size !== list.length) errors.featured = 'duplicate';
+  else if (list.some((id) => !workIds.has(id))) errors.featured = 'missing';
+  return errors;
+}
+
+/** Il blocco `home` di site.json; senza scelte non si scrive niente (`null`). */
+export function homeRecord({ hero, featured }) {
+  const list = Array.isArray(featured) ? featured.map(text).filter(Boolean) : [];
+  const record = { ...(text(hero) ? { hero: text(hero) } : {}), ...(list.length ? { featured: list } : {}) };
+  return Object.keys(record).length ? record : null;
 }
 
 export function checkSettings(input) {

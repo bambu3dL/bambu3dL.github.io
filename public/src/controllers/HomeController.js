@@ -1,6 +1,7 @@
 import { PageController } from './PageController.js';
 import { HeroController } from './HeroController.js';
 import { renderInto, prefersReducedMotion } from '../core/dom.js';
+import { SITE } from '../config.js';
 import { homeView } from '../views/HomeView.js';
 import { observeReveals } from '../core/reveal.js';
 
@@ -24,14 +25,21 @@ export class HomeController extends PageController {
     await snapshots.prepare(allWorks);
     const byId = new Map(allMaterials.map((material) => [material.id, material]));
 
-    const pairs = allWorks.map((work) => ({ work, material: byId.get(work.materialId) })).filter((pair) => pair.material);
-    // L'hero stampa un vaso: il primo oggetto a spirale dell'elenco, altrimenti il più recente.
-    // Il palco dell'hero ricalca il vaso: se non c'è si preferisce una forma di esempio a un modello vero.
-    const hero = pairs.find((pair) => pair.work.shape.kind === 'twistVase') ?? pairs.find((pair) => pair.work.shape.kind !== 'model') ?? pairs[0];
-    const ledger = pairs.slice(0, LEDGER_COUNT).map(({ work, material }) => ({
+    const pairs = allWorks
+      .map((work) => ({ work, summary: estimator.summary(work, byId), material: byId.get(work.materialId) }))
+      .filter((pair) => pair.summary && pair.material)
+      .map((pair) => ({ ...pair, colors: pair.summary.colors }));
+    // L'oggetto che si stampa scorrendo lo sceglie l'area riservata; senza scelta, il primo vaso a spirale dell'elenco.
+    const hero = pairs.find((pair) => pair.work.id === SITE.home.hero) ?? pairs.find((pair) => pair.work.shape.kind === 'twistVase') ?? pairs[0];
+    // Anche i quattro in evidenza: senza scelta (o se sono spariti) i primi dell'elenco.
+    const chosen = (SITE.home.featured ?? []).map((id) => pairs.find((pair) => pair.work.id === id)).filter(Boolean);
+    const featured = SITE.home.featured && chosen.length ? chosen : pairs.slice(0, LEDGER_COUNT);
+    const ledger = featured.map(({ work, material, colors, summary }) => ({
       work,
       material,
-      estimate: estimator.estimate(work, material),
+      colors,
+      estimate: summary.estimate,
+      estimateMaterial: summary.material,
       image: snapshots.snapshot(work, material),
     }));
 

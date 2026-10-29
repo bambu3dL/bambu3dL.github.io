@@ -16,6 +16,7 @@ export default {
     about: 'Chi siamo',
     quote: 'Contatti',
     privacy: 'Privacy',
+    admin: 'Area riservata',
   },
   title: {
     home: 'Stampe 3D su misura',
@@ -109,6 +110,8 @@ export default {
     photoAlt: '{title}, foto dell’oggetto stampato',
     photoCaption: 'L’oggetto stampato.',
     material: 'Materiale',
+    colors: 'Colori',
+    multiColor: '{n} colori',
     size: 'Dimensioni',
     weight: 'Peso',
     stockTitle: 'Filamento: stima e residuo',

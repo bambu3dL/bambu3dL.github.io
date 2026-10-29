@@ -1,6 +1,9 @@
 import {
   MODEL_KIND,
   ValidationError,
+  checkHome,
+  colorsOfRecord,
+  homeRecord,
   applyStockChange,
   checkFamily,
   checkMaterial,
@@ -52,9 +55,16 @@ export class CatalogAdmin {
     return { materials: data.materials, families: data.families, spools: spoolData.spools };
   }
 
+  /** Nell'ordine in cui compaiono nel sito: lo decide l'admin (moveWork), i nuovi vanno in cima. */
   async works() {
     const { data } = await this.#worksFile();
-    return [...data.works].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    return [...data.works];
+  }
+
+  /** Le scelte per la home: { hero, featured } (vuoto = automatico). */
+  async home() {
+    const { data } = await this.#gateway.readJson(FILES.site);
+    return { hero: data?.home?.hero ?? '', featured: Array.isArray(data?.home?.featured) ? data.home.featured : [] };
   }
 
   async settings() {
@@ -104,7 +114,7 @@ export class CatalogAdmin {
     const { data, sha } = await this.#materialsFile();
     const material = data.materials.find((item) => item.id === id);
     if (!material) throw new ValidationError({ id: 'missing' });
-    const users = (await this.#worksFile()).data.works.filter((work) => work.materialId === id);
+    const users = (await this.#worksFile()).data.works.filter((work) => colorsOfRecord(work).some((color) => color.materialId === id));
     if (users.length) throw new ValidationError({ id: 'inUse' }, { works: users.map((work) => work.title.it) });
     const { data: spoolData, sha: spoolSha } = await this.#spoolsFile();
     const own = spoolData.spools.filter((spool) => spool.materialId === id);
@@ -167,7 +177,7 @@ export class CatalogAdmin {
     }
     const record = workRecord(input, recordId, { photo: photoPath, modelPath });
     if (index >= 0) data.works[index] = record;
-    else data.works.push(record);
+    else data.works.unshift(record);
     await this.#gateway.writeJson(FILES.works, data, { sha, message: `Admin: ${index >= 0 ? 'aggiorna' : 'aggiungi'} l’oggetto ${record.title.it}` });
 
     if (previous && previous !== photoPath) await this.#removeQuietly(previous, `Admin: toglie la vecchia foto di ${record.title.it}`);
@@ -181,8 +191,34 @@ export class CatalogAdmin {
     if (!work) throw new ValidationError({ id: 'missing' });
     data.works = data.works.filter((item) => item.id !== id);
     await this.#gateway.writeJson(FILES.works, data, { sha, message: `Admin: elimina l’oggetto ${work.title.it}` });
+    await this.#forgetInHome(id);
     if (work.photo) await this.#removeQuietly(work.photo, `Admin: toglie la foto di ${work.title.it}`);
     if (work.shape?.kind === MODEL_KIND && work.shape.url) await this.#removeQuietly(work.shape.url, `Admin: toglie il modello 3D di ${work.title.it}`);
+  }
+
+  /** Sposta un oggetto di un posto nell'elenco del sito (`direction` 'up' = più in alto). */
+  async moveWork(id, direction) {
+    const { data, sha } = await this.#worksFile();
+    const index = data.works.findIndex((item) => item.id === id);
+    if (index < 0) throw new ValidationError({ id: 'missing' });
+    const target = direction === 'up' ? index - 1 : index + 1;
+    if (target < 0 || target >= data.works.length) return false;
+    [data.works[index], data.works[target]] = [data.works[target], data.works[index]];
+    await this.#gateway.writeJson(FILES.works, data, { sha, message: `Admin: sposta l’oggetto ${data.works[target].title.it}` });
+    return true;
+  }
+
+  /** L'oggetto che si stampa scorrendo la home e quelli in evidenza. Tutto vuoto = automatico. */
+  async saveHome({ hero = '', featured = [] }) {
+    const { data: worksData } = await this.#worksFile();
+    const errors = checkHome({ hero, featured }, { workIds: new Set(worksData.works.map((item) => item.id)) });
+    if (Object.keys(errors).length) throw new ValidationError(errors);
+    const { data, sha } = await this.#gateway.readJson(FILES.site);
+    const next = { ...(data ?? {}) };
+    const record = homeRecord({ hero, featured });
+    if (record) next.home = record;
+    else delete next.home;
+    await this.#gateway.writeJson(FILES.site, next, { sha, message: 'Admin: aggiorna la home page' });
   }
 
   /* ---------- Bobine ---------- */
@@ -280,16 +316,29 @@ export class CatalogAdmin {
     return this.consume({ materialId, grams: Math.round(value), reason: String(reason ?? '').trim().slice(0, 120) || 'Grammi usati' });
   }
 
-  /** Scala dal magazzino il filamento stimato di un oggetto stampato `copies` volte. */
+  /**
+   * Scala dal magazzino il filamento stimato di un oggetto stampato `copies` volte, colore per colore.
+   * Il risultato somma i colori (come un consumo solo) e tiene il dettaglio in `byColor`.
+   */
   async consumeForWork({ workId, copies = 1 }) {
     const work = (await this.#worksFile()).data.works.find((item) => item.id === workId);
     if (!work) throw new ValidationError({ workId: 'missing' });
     const count = Math.max(1, Math.min(100, Math.floor(Number(copies)) || 1));
-    return this.consume({
-      materialId: work.materialId,
-      grams: work.estimatedG * count,
-      reason: `Stampa: ${work.title.it}${count > 1 ? ` × ${count}` : ''}`,
-    });
+    const reason = `Stampa: ${work.title.it}${count > 1 ? ` × ${count}` : ''}`;
+    const byColor = [];
+    for (const color of colorsOfRecord(work)) {
+      byColor.push({ materialId: color.materialId, result: await this.consume({ materialId: color.materialId, grams: color.grams * count, reason }) });
+    }
+    const sum = (key) => byColor.reduce((total, item) => total + item.result[key], 0);
+    return {
+      requestedG: sum('requestedG'),
+      takenG: sum('takenG'),
+      shortfallG: sum('shortfallG'),
+      beforeG: sum('beforeG'),
+      afterG: sum('afterG'),
+      parts: byColor.flatMap((item) => item.result.parts),
+      byColor,
+    };
   }
 
   /* ---------- Impostazioni ---------- */
@@ -297,8 +346,9 @@ export class CatalogAdmin {
   async saveSettings(input) {
     const errors = checkSettings(input);
     if (Object.keys(errors).length) throw new ValidationError(errors);
-    const { sha } = await this.#gateway.readJson(FILES.site);
-    await this.#gateway.writeJson(FILES.site, settingsRecord(input), { sha, message: 'Admin: aggiorna le impostazioni del sito' });
+    const { data, sha } = await this.#gateway.readJson(FILES.site);
+    // Si cambiano solo nome ed email: le scelte della home (e ciò che verrà) nello stesso file restano.
+    await this.#gateway.writeJson(FILES.site, { ...(data ?? {}), ...settingsRecord(input) }, { sha, message: 'Admin: aggiorna le impostazioni del sito' });
   }
 
   /* ---------- Interni ---------- */
@@ -325,6 +375,20 @@ export class CatalogAdmin {
   }
 
   /** Cancellare una foto vecchia non deve far fallire il salvataggio dell'oggetto: se non riesce, resta un file in più. */
+  /** Un oggetto eliminato non resta tra le scelte della home. */
+  async #forgetInHome(id) {
+    try {
+      const { data, sha } = await this.#gateway.readJson(FILES.site);
+      const home = data?.home;
+      if (!home || (home.hero !== id && !(home.featured ?? []).includes(id))) return;
+      const next = { ...data };
+      const record = homeRecord({ hero: home.hero === id ? '' : home.hero, featured: (home.featured ?? []).filter((item) => item !== id) });
+      if (record) next.home = record;
+      else delete next.home;
+      await this.#gateway.writeJson(FILES.site, next, { sha, message: 'Admin: toglie un oggetto eliminato dalla home' });
+    } catch { /* la home ignora comunque gli oggetti che non esistono più */ }
+  }
+
   async #removeQuietly(path, message) {
     try {
       const sha = await this.#gateway.shaOf(path);

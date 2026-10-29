@@ -208,6 +208,75 @@ function chip() {
 
 const GENERATORS = { twistVase, honeycomb, gear, chip };
 
+/**
+ * Il contorno di un oggetto a ogni quota: serve all'ugello dell'hero per seguire il perimetro di qualsiasi forma, non solo del vaso.
+ * Si ricava una volta sola dai punti della superficie (vertici, metà spigoli e centro di ogni triangolo) in una tabella
+ * quota x angolo con il raggio massimo dall'asse; i vuoti si riempiono con i vicini. Funziona sulla geometria già normalizzata.
+ * @returns {(t: number, angle: number) => number} raggio (nelle unità della geometria normalizzata) alla quota t (0..1) e all'angolo dato
+ */
+export function outlineSampler(geometry) {
+  if (geometry.userData.outline) return geometry.userData.outline;
+  const SLICES = 96;
+  const SECTORS = 72;
+  const table = new Float32Array(SLICES * SECTORS);
+  const { minY, spanY } = geometry.userData;
+  const position = geometry.attributes.position;
+  const index = geometry.index?.array;
+  const count = (index ? index.length : position.count) / 3;
+  const vertex = (n) => (index ? index[n] : n);
+  const add = (x, y, z) => {
+    const slice = Math.min(SLICES - 1, Math.max(0, Math.floor(((y - minY) / spanY) * SLICES)));
+    const sector = Math.min(SECTORS - 1, Math.floor((((Math.atan2(z, x) % TAU) + TAU) % TAU) / TAU * SECTORS));
+    const radius = Math.hypot(x, z);
+    if (radius > table[slice * SECTORS + sector]) table[slice * SECTORS + sector] = radius;
+  };
+  for (let t = 0; t < count; t += 1) {
+    const a = vertex(t * 3);
+    const b = vertex(t * 3 + 1);
+    const c = vertex(t * 3 + 2);
+    const ax = position.getX(a); const ay = position.getY(a); const az = position.getZ(a);
+    const bx = position.getX(b); const by = position.getY(b); const bz = position.getZ(b);
+    const cx = position.getX(c); const cy = position.getY(c); const cz = position.getZ(c);
+    add(ax, ay, az); add(bx, by, bz); add(cx, cy, cz);
+    add((ax + bx) / 2, (ay + by) / 2, (az + bz) / 2);
+    add((bx + cx) / 2, (by + cy) / 2, (bz + cz) / 2);
+    add((ax + cx) / 2, (ay + cy) / 2, (az + cz) / 2);
+    add((ax + bx + cx) / 3, (ay + by + cy) / 3, (az + bz + cz) / 3);
+  }
+  for (let slice = 0; slice < SLICES; slice += 1) {
+    const row = table.subarray(slice * SECTORS, (slice + 1) * SECTORS);
+    const filled = [...row.keys()].filter((k) => row[k] > 0);
+    if (filled.length === 0) continue;
+    for (let k = 0; k < SECTORS; k += 1) {
+      if (row[k] > 0) continue;
+      let before = 1;
+      while (row[(k - before + SECTORS) % SECTORS] === 0) before += 1;
+      let after = 1;
+      while (row[(k + after) % SECTORS] === 0) after += 1;
+      const r1 = row[(k - before + SECTORS) % SECTORS];
+      const r2 = row[(k + after) % SECTORS];
+      row[k] = -(r1 + (r2 - r1) * (before / (before + after))); // negativo: valore ricavato, non usarlo per riempire altri vuoti
+    }
+    for (let k = 0; k < SECTORS; k += 1) row[k] = Math.abs(row[k]);
+  }
+  // quote senza nessun punto (pareti perfettamente verticali con pochi triangoli): copiano la vicina
+  for (let slice = 1; slice < SLICES; slice += 1) {
+    if (table.subarray(slice * SECTORS, (slice + 1) * SECTORS).every((value) => value === 0)) table.copyWithin(slice * SECTORS, (slice - 1) * SECTORS, slice * SECTORS);
+  }
+  for (let slice = SLICES - 2; slice >= 0; slice -= 1) {
+    if (table.subarray(slice * SECTORS, (slice + 1) * SECTORS).every((value) => value === 0)) table.copyWithin(slice * SECTORS, (slice + 1) * SECTORS, (slice + 2) * SECTORS);
+  }
+  const sampler = (t, angle) => {
+    const slice = Math.min(SLICES - 1, Math.max(0, Math.round(t * (SLICES - 1))));
+    const sector = ((((angle % TAU) + TAU) % TAU) / TAU) * SECTORS;
+    const k = Math.floor(sector);
+    const mix = sector - k;
+    return table[slice * SECTORS + (k % SECTORS)] * (1 - mix) + table[slice * SECTORS + ((k + 1) % SECTORS)] * mix;
+  };
+  geometry.userData.outline = sampler;
+  return sampler;
+}
+
 /** Costruisce (e memorizza) la geometria normalizzata per una forma di esempio. */
 export function buildPrintGeometry(shape) {
   const key = JSON.stringify(shape);

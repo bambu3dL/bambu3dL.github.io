@@ -11,6 +11,7 @@ const PATHS = {
   upload: '<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>',
   idea: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.7.6 1 1.3 1 2.1h5c0-.8.3-1.5 1-2.1A6 6 0 0 0 12 3z"/>',
   file: '<path d="M7 3h7l5 5v13H7zM14 3v5h5"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
 };
 
 export function icon(name, { size = 20 } = {}) {

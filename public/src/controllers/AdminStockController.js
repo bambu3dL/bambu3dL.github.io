@@ -41,9 +41,10 @@ export class AdminStockController extends AdminPage {
       return;
     }
     const copies = Math.max(1, Math.min(100, Math.floor(Number(form.elements.copies.value)) || 1));
-    target.textContent = A.stock.printed.preview
-      .replace('{grams}', fmt(Number(option.dataset.grams) * copies))
-      .replace('{material}', this.#label(option.dataset.material));
+    const colors = JSON.parse(option.dataset.colors);
+    target.textContent = colors.length === 1
+      ? A.stock.printed.preview.replace('{grams}', fmt(colors[0].grams * copies)).replace('{material}', this.#label(colors[0].materialId))
+      : A.stock.printed.previewMulti.replace('{list}', colors.map((color) => `${fmt(color.grams * copies)} di ${this.#label(color.materialId)}`).join(', '));
   }
 
   /** Dice in anticipo quanto resterebbe del filo dopo i grammi scritti. */
@@ -109,13 +110,17 @@ export class AdminStockController extends AdminPage {
 
   async #printed(form) {
     const values = formValues(form);
-    const work = form.elements.workId.selectedOptions[0];
-    const materialId = work.dataset.material;
+    const colors = JSON.parse(form.elements.workId.selectedOptions[0].dataset.colors);
     let result;
     const ok = await this.run(form, async () => { result = await this.catalog.consumeForWork({ workId: values.workId, copies: values.copies }); });
     if (!ok) return;
     await this.show(this.context);
-    const label = this.#label(materialId);
+    if (colors.length > 1) {
+      const list = result.byColor.map((item) => `${fmt(item.result.takenG)} di ${this.#label(item.materialId)}`).join(', ');
+      this.flash((result.shortfallG > 0 ? A.stock.printed.shortMulti.replace('{short}', fmt(result.shortfallG)) : A.stock.printed.doneMulti).replace('{list}', list), result.shortfallG > 0 ? 'error' : 'ok');
+      return;
+    }
+    const label = this.#label(colors[0].materialId);
     this.flash(result.shortfallG > 0
       ? A.stock.printed.short.replace('{taken}', fmt(result.takenG)).replace('{material}', label).replace('{grams}', fmt(result.requestedG)).replace('{short}', fmt(result.shortfallG))
       : A.stock.printed.done.replace('{grams}', fmt(result.takenG)).replace('{material}', label).replace('{after}', fmt(result.afterG)),

@@ -28,7 +28,7 @@ import {
   WebGLRenderer,
 } from '../../assets/vendor/three/three.module.min.js';
 import { RoomEnvironment } from '../../assets/vendor/three/addons/RoomEnvironment.js';
-import { buildPrintGeometry, vaseRadius } from './PrintGeometry.js';
+import { buildPrintGeometry, outlineSampler, vaseRadius } from './PrintGeometry.js';
 import { createPrintMaterial } from './PrintMaterial.js';
 
 // La scena dell'hero: un ugello vero che stampa un vaso su un piatto in PEI con reticolo.
@@ -138,6 +138,7 @@ export class BedScene {
   #glow;
   #tipLight;
   #shape;
+  #outline = null;
   #geometry;
   #width = 1;
   #height = 1;
@@ -237,6 +238,8 @@ export class BedScene {
 
   #buildVase(hex) {
     this.#geometry = buildPrintGeometry(this.#shape);
+    // Il vaso ha una formula; ogni altra forma (ingranaggio, modello vero) si segue dal suo contorno.
+    this.#outline = this.#shape.kind === 'twistVase' ? null : outlineSampler(this.#geometry);
     const { minY, spanY, solid } = this.#geometry.userData;
     const material = createPrintMaterial({ hex, minY, spanY, solid, layers: 200, hotWidth: 0.22 });
     material.clippingPlanes = [this.#plane];
@@ -317,11 +320,13 @@ export class BedScene {
 
     // L'ugello gira lungo la parete del vaso: la modalità vaso è una sola spirale continua.
     const angle = t * Math.PI * 2 * 150;
-    const raw = vaseRadius(this.#shape, t, angle);
     const { center, extent } = this.#geometry.userData;
+    // Con il contorno il raggio è già nelle unità normalizzate e centrato sull'asse; con la formula del vaso no.
+    const raw = this.#outline ? this.#outline(t, angle) : vaseRadius(this.#shape, t, angle);
+    const [originX, originZ, divisor] = this.#outline ? [0, 0, 1] : [center[0], center[2], extent];
     const scale = VASE_HEIGHT / this.#geometry.userData.spanY;
-    const tipX = ((Math.cos(angle) * raw - center[0]) / extent) * scale;
-    const tipZ = ((Math.sin(angle) * raw - center[2]) / extent) * scale;
+    const tipX = ((Math.cos(angle) * raw - originX) / divisor) * scale;
+    const tipZ = ((Math.sin(angle) * raw - originZ) / divisor) * scale;
     const tip = new Vector3(tipX, y + 0.12, tipZ);
     const parked = new Vector3(13, VASE_HEIGHT + 9, -3);
     tip.lerp(parked, smooth(q));

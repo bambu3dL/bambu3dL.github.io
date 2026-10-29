@@ -10,6 +10,7 @@
 //                                       senza riferimento: la Libreria (i file caricati da noi)
 //   upload(reference?, files)        -> string[] i nomi salvati (files: File del browser)
 //   trashFile(fileId)                -> void (nel cestino di Drive, ripristinabile)
+//   download(fileId)                 -> { name, bytes: Uint8Array } il contenuto di un file della Libreria o di una richiesta
 //
 // Gli errori sono ContactsError con un codice stabile.
 export class ContactsGateway {
@@ -20,6 +21,7 @@ export class ContactsGateway {
   async files() { throw new Error('not implemented'); }
   async upload() { throw new Error('not implemented'); }
   async trashFile() { throw new Error('not implemented'); }
+  async download() { throw new Error('not implemented'); }
 }
 
 /** code: 'notConfigured' | 'key' | 'locked' | 'notFound' | 'badRequest' | 'files' | 'filesCount' | 'filesType' | 'filesSize' | 'filesTotal' | 'network' | 'server' */

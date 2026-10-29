@@ -40,6 +40,7 @@ export function footerView({ t }) {
           ${NAV.map((item) => html`<li><a href="${item.path}">${t(`nav.${item.key}`)}</a></li>`)}
           <li><a href="/contact">${t('nav.quote')}</a></li>
           <li><a href="/privacy">${t('nav.privacy')}</a></li>
+          <li><a class="footer-admin" href="/admin">${icon('lock', { size: 14 })}${t('nav.admin')}</a></li>
         </ul>
       </nav>
     </div>

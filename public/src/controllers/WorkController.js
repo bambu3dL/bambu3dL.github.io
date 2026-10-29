@@ -32,6 +32,7 @@ export class WorkController extends PageController {
     this.heading = work.title(i18n.lang);
     this.summary = work.summary(i18n.lang);
 
+    const summary = estimator.summary(work, new Map(allMaterials.map((item) => [item.id, item])));
     const webgl = webglSupported();
     renderInto(outlet, workView({
       t,
@@ -39,9 +40,11 @@ export class WorkController extends PageController {
       i18n,
       work,
       material,
-      estimate: estimator.estimate(work, material),
+      estimate: summary.estimate,
+      colors: summary.colors,
       image: snapshots.snapshot(work, material),
-      alternatives: allMaterials
+      // "In altri materiali" sostituisce l'oggetto intero con un solo filo: ha senso solo per gli oggetti di un colore.
+      alternatives: work.colors.length > 1 ? [] : allMaterials
         .filter((other) => other.id !== material.id)
         .map((other) => ({ material: other, estimate: estimator.estimate(work, other) })),
       webgl,

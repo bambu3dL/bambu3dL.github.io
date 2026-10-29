@@ -24,6 +24,16 @@ export function swatch(material) {
   return html`<span class="swatch" data-hex="${material.hex}" aria-hidden="true"></span>`;
 }
 
+/** Le pastiglie di tutti i colori di un oggetto, una accanto all'altra. */
+export function colorStrip(colors) {
+  return html`<span class="swatches">${colors.map(({ material }) => swatch(material))}</span>`;
+}
+
+/** Il nome del filo, o "3 colori" se l'oggetto ne ha più di uno. */
+export function colorName({ colors, lang, t }) {
+  return colors.length > 1 ? t('work.multiColor', { n: colors.length }) : colors[0].material.label(lang);
+}
+
 /** Campione stampato di un materiale: tre gradini di spessore, con nome e grammi. */
 export function materialTile({ material, image, lang, i18n, caption = '', estimate = null }) {
   const after = estimate ? Math.max(0, material.remainingFraction - estimate.shareOfSpool) : material.remainingFraction;

@@ -31,6 +31,9 @@
 .logo-mid { fill: color-mix(in oklch, var(--signal) 68%, var(--bg)); }
 .logo-base { fill: color-mix(in oklch, var(--signal) 42%, var(--bg)); }
 
+.swatches { display: inline-flex; gap: 0.15rem; margin-right: 0.45rem; vertical-align: -0.1em; }
+.swatches .swatch { margin-right: 0; }
+
 .brand-text { display: grid; line-height: 1; }
 .brand-name { font-family: var(--font-display); font-weight: 560; font-size: 1.3rem; letter-spacing: -0.03em; }
 .brand-by { font-size: 0.75rem; color: var(--ink-faint); margin-top: 0.25rem; }
@@ -352,6 +355,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px
 }
 
 .footer-title { font-family: var(--font-display); font-weight: 480; font-size: 1.6rem; letter-spacing: -0.03em; margin-bottom: var(--s-2); }
+.footer-admin { display: inline-flex; align-items: center; gap: 0.4rem; }
 .footer-brand p { color: var(--ink-dim); max-width: 22rem; }
 .footer-links { display: grid; grid-template-columns: repeat(2, auto); justify-content: start; gap: var(--s-2) var(--s-6); }
 .footer-links a { display: inline-block; padding-block: 0.7rem; text-decoration: none; font-weight: 500; }

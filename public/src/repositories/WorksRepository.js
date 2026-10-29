@@ -22,7 +22,8 @@ export class JsonWorksRepository extends WorksRepository {
       const response = await fetch(this.#url, { credentials: 'same-origin', cache: 'no-cache' });
       if (!response.ok) throw new Error(`works: ${response.status}`);
       const data = await response.json();
-      this.#cache = data.works.map((item) => new Work(item)).filter((work) => work.visible).sort((a, b) => b.date - a.date);
+      // L'ordine è quello del file: lo sceglie l'area riservata (i nuovi oggetti vanno in cima).
+      this.#cache = data.works.map((item) => new Work(item)).filter((work) => work.visible);
     }
     return this.#cache;
   }

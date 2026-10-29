@@ -71,6 +71,7 @@ export async function importModelBytes(bytes, name) {
           sizeMm: size,
           volumeCm3: bounds.volumeMm3 / 1000,
           sliceGrams: slice?.grams ?? null,
+          sliceFilaments: slice?.filaments ?? [], // i grammi di ogni filamento, nell'ordine dello slicer
           sliceSeconds: slice?.seconds ?? null,
           packedBytes: packed.length,
         },

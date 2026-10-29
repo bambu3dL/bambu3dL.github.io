@@ -150,7 +150,13 @@ export function materialFormView({ material, families, spools }) {
 
 /* ---------- Oggetti ---------- */
 
-export function worksListView({ works, materialsById }) {
+const colorsOf = (work) => (work.colors?.length ? work.colors : [{ materialId: work.materialId, grams: work.estimatedG }]);
+
+export function worksListView({ works, materialsById, home }) {
+  const heroId = home.hero;
+  const featured = new Set(home.featured);
+  const slots = [0, 1, 2, 3];
+  const option = (work, selected) => html`<option value="${work.id}" ${selected ? 'selected' : ''}>${work.title.it}${work.visible === false ? ` (${A.works.hidden.toLowerCase()})` : ''}</option>`;
   return html`
     <section class="page-head">
       <h1>${A.works.title}</h1>
@@ -158,26 +164,86 @@ export function worksListView({ works, materialsById }) {
       <div class="admin-actions"><a class="btn btn-primary" href="/admin/works/new">${A.works.add}</a></div>
     </section>
     <section class="section admin-section">
+      <p class="muted">${A.works.orderHint}</p>
       ${works.length === 0 ? html`<p class="muted">${A.common.noItems}</p>` : html`
         <ul class="admin-rows">
-          ${works.map((work) => {
-            const material = materialsById.get(work.materialId);
-            return html`<li class="admin-row" data-hex="${safeHex(material?.hex ?? '#888888')}">
-              <span class="swatch" data-hex="${safeHex(material?.hex ?? '#888888')}" aria-hidden="true"></span>
+          ${works.map((work, index) => {
+            const colors = colorsOf(work).map((color) => materialsById.get(color.materialId)).filter(Boolean);
+            const material = colors[0];
+            const names = colors.length > 1 ? A.works.colorsCount.replace('{n}', colors.length) : (material ? materialLabel(material) : '—');
+            return html`<li class="admin-row admin-row-work" data-hex="${safeHex(material?.hex ?? '#888888')}">
+              <span class="swatches" aria-hidden="true">${colors.map((item) => html`<span class="swatch" data-hex="${safeHex(item.hex)}"></span>`)}</span>
               <span class="admin-row-main">
                 <b>${work.title.it}</b>
-                <span class="muted">${material ? materialLabel(material) : '—'} · ${grams(work.estimatedG)} · ${work.date}</span>
+                <span class="muted">${names} · ${grams(work.estimatedG)} · ${work.date}</span>
               </span>
               <span class="admin-tags">
+                ${work.id === heroId ? html`<span class="admin-tag is-home">${A.works.tagHero}</span>` : ''}
+                ${featured.has(work.id) ? html`<span class="admin-tag is-home">${A.works.tagFeatured}</span>` : ''}
                 ${work.visible === false ? html`<span class="admin-tag">${A.works.hidden}</span>` : ''}
                 ${work.photo ? html`<span class="admin-tag">${A.works.hasPhoto}</span>` : ''}
                 ${work.shape?.kind === 'model' ? html`<span class="admin-tag">${A.works.hasModel}</span>` : ''}
               </span>
-              <a class="btn btn-ghost btn-small" href="/admin/works/${work.id}">${A.common.edit}</a>
+              <span class="admin-row-actions">
+                <button class="btn btn-ghost btn-small btn-icon" type="button" data-work-move="${work.id}" data-dir="up" aria-label="${A.works.moveUp}: ${work.title.it}" ${index === 0 ? 'disabled' : ''}>↑</button>
+                <button class="btn btn-ghost btn-small btn-icon" type="button" data-work-move="${work.id}" data-dir="down" aria-label="${A.works.moveDown}: ${work.title.it}" ${index === works.length - 1 ? 'disabled' : ''}>↓</button>
+                <a class="btn btn-ghost btn-small" href="/admin/works/${work.id}">${A.common.edit}</a>
+                <button class="btn btn-ghost btn-small" type="button" data-work-delete="${work.id}">${A.common.delete}</button>
+              </span>
             </li>`;
           })}
         </ul>`}
-    </section>`;
+    </section>
+
+    ${works.length === 0 ? '' : html`<section class="section admin-section">
+      <form class="admin-form" data-home-form novalidate>
+        <h2>${A.works.home.title}</h2>
+        <p class="muted">${A.works.home.lead}</p>
+        <div class="field">
+          <label for="h-hero">${A.works.home.hero}</label>
+          <select id="h-hero" name="hero" aria-describedby="hero-error">
+            <option value="">${A.works.home.auto}</option>
+            ${works.filter((work) => work.visible !== false).map((work) => option(work, work.id === heroId))}
+          </select>
+          <p class="field-hint">${A.works.home.heroHint}</p>
+          ${errorSlot('hero')}
+        </div>
+        <fieldset class="field admin-featured">
+          <legend>${A.works.home.featured}</legend>
+          <p class="field-hint">${A.works.home.featuredHint}</p>
+          <div class="admin-featured-grid">
+            ${slots.map((slot) => html`<label>${A.works.home.slot.replace('{n}', slot + 1)}
+              <select name="featured_${slot + 1}">
+                <option value="">${A.works.home.none}</option>
+                ${works.filter((work) => work.visible !== false).map((work) => option(work, work.id === home.featured[slot]))}
+              </select>
+            </label>`)}
+          </div>
+          ${errorSlot('featured')}
+        </fieldset>
+        <div class="form-actions"><button class="btn btn-primary" type="submit" data-submit>${A.works.home.save}</button></div>
+      </form>
+    </section>`}`;
+}
+
+/** Il pannello "scegli dal Drive": cartella, elenco dei modelli (STL e 3MF) e un pulsante per usarli. */
+export function modelPickerView({ options, reference, files, error = '' }) {
+  return html`
+    <div class="field">
+      <label for="pk-target">${A.works.picker.folder}</label>
+      <select id="pk-target" data-picker-target>
+        <option value="" ${reference === '' ? 'selected' : ''}>${A.files.where.library}</option>
+        ${options.map((option) => html`<option value="${option.reference}" ${option.reference === reference ? 'selected' : ''}>${option.reference} · ${option.name}</option>`)}
+      </select>
+    </div>
+    ${error ? html`<p class="admin-state is-failed" role="alert">${error}</p>` : ''}
+    ${!error && files.length === 0 ? html`<p class="muted">${A.works.picker.empty}</p>` : ''}
+    ${files.length === 0 ? '' : html`<ul class="admin-rows">
+      ${files.map((file) => html`<li class="admin-row admin-row-text">
+        <span class="admin-row-main"><b>${file.name}</b><span class="muted">${file.sizeLabel} · ${file.dateLabel}</span></span>
+        <span class="admin-row-actions"><button class="btn btn-ghost btn-small" type="button" data-pick-file="${file.id}">${A.works.picker.use}</button></span>
+      </li>`)}
+    </ul>`}`;
 }
 
 function shapeFields(kind, shape) {
@@ -187,9 +253,12 @@ function shapeFields(kind, shape) {
   </div>`);
 }
 
-export function workFormView({ work, materials, today }) {
+export function workFormView({ work, materials, today, driveReady = false }) {
   const editing = work !== null;
   const value = work ?? { title: { it: '' }, summary: { it: '' }, materialId: '', estimatedG: '', dimensionsMm: [], date: today, shape: { kind: 'model' }, visible: true };
+  // Fino a quattro colori: le righe oltre l'ultima usata restano nascoste finché non si preme "Aggiungi un colore".
+  const colors = work ? colorsOf(work) : [{ materialId: '', grams: '' }];
+  const rows = [0, 1, 2, 3].map((slot) => colors[slot] ?? { materialId: '', grams: '' });
   const [dimW = '', dimD = '', dimH = ''] = value.dimensionsMm ?? [];
   const kind = value.shape.kind === 'model' || value.shape.kind in SHAPES ? value.shape.kind : 'model';
   return html`
@@ -219,21 +288,28 @@ export function workFormView({ work, materials, today }) {
           <label for="w-summary-en">${A.works.form.summaryEn} (${A.common.optional})</label>
           <textarea id="w-summary-en" name="summaryEn" rows="3">${value.summary.en ?? ''}</textarea>
         </div>
-        <div class="field-row">
-          <div class="field">
-            <label for="w-material">${A.works.form.material}</label>
-            <select id="w-material" name="materialId" aria-describedby="materialId-error">
-              <option value="" ${value.materialId ? '' : 'selected'}>${A.works.form.pickMaterial}</option>
-              ${materials.map((material) => html`<option value="${material.id}" ${material.id === value.materialId ? 'selected' : ''}>${materialLabel(material)}</option>`)}
-            </select>
-            ${errorSlot('materialId')}
+        <fieldset class="field admin-colors" data-colors>
+          <legend>${A.works.form.colors}</legend>
+          <p class="field-hint">${A.works.form.colorsHint}</p>
+          ${rows.map((row, slot) => html`<div class="admin-color-row" data-color-row="${slot + 1}" ${slot === 0 || slot < colors.length ? '' : 'hidden'}>
+            <label>${slot === 0 ? A.works.form.material : A.works.form.colorN.replace('{n}', slot + 1)}
+              <select name="colorMaterial_${slot + 1}" ${slot === 0 ? 'aria-describedby="materialId-error"' : ''}>
+                <option value="" ${row.materialId ? '' : 'selected'}>${A.works.form.pickMaterial}</option>
+                ${materials.map((material) => html`<option value="${material.id}" ${material.id === row.materialId ? 'selected' : ''}>${materialLabel(material)}</option>`)}
+              </select>
+            </label>
+            <label>${A.works.form.colorGrams}
+              <input name="colorGrams_${slot + 1}" type="number" min="1" max="20000" step="1" inputmode="numeric" value="${row.grams}" ${slot === 0 ? 'aria-describedby="estimatedG-error"' : ''}>
+            </label>
+            ${slot === 0 ? '' : html`<button class="btn btn-ghost btn-small" type="button" data-remove-color>${A.works.form.removeColor}</button>`}
+          </div>`)}
+          ${errorSlot('materialId')}
+          ${errorSlot('estimatedG')}
+          <div class="admin-colors-foot">
+            <button class="btn btn-ghost btn-small" type="button" data-add-color ${colors.length >= 4 ? 'hidden' : ''}>${A.works.form.addColor}</button>
+            <span class="muted" data-colors-total aria-live="polite"></span>
           </div>
-          <div class="field">
-            <label for="w-grams">${A.works.form.grams}</label>
-            <input id="w-grams" name="estimatedG" type="number" min="1" max="20000" step="1" inputmode="numeric" value="${value.estimatedG}" aria-describedby="estimatedG-error">
-            ${errorSlot('estimatedG')}
-          </div>
-        </div>
+        </fieldset>
         <fieldset class="field admin-dims">
           <legend>${A.works.form.size}</legend>
           <div class="admin-dims-row">
@@ -262,9 +338,13 @@ export function workFormView({ work, materials, today }) {
             <div class="field">
               <label for="w-model">${A.works.model.file}</label>
               <input id="w-model" name="modelFile" type="file" accept=".stl,.3mf" aria-describedby="w-model-hint model-error">
-              <p class="field-hint" id="w-model-hint">${A.works.model.hint}</p>
+              <p class="field-hint" id="w-model-hint">${A.works.model.hint}${driveReady ? ` ${A.works.model.hintDrive}` : ''}</p>
               ${errorSlot('model')}
             </div>
+            ${driveReady ? html`<div class="admin-drive-pick">
+              <button class="btn btn-ghost btn-small" type="button" data-drive-open aria-expanded="false" aria-controls="drive-picker">${A.works.picker.open}</button>
+              <div class="admin-picker" id="drive-picker" data-drive-picker hidden></div>
+            </div>` : ''}
             <p class="admin-fixed" data-model-stats aria-live="polite"></p>
           </div>
           ${Object.keys(SHAPES).map((key) => html`<div class="admin-shape-fields" data-shape-fields="${key}" ${key === kind ? '' : 'hidden'}>${shapeFields(key, value.shape)}</div>`)}
@@ -315,7 +395,7 @@ export function stockView({ materials, spools, works, log, pickedSpool }) {
           <div class="field">
             <label for="p-work">${A.stock.printed.work}</label>
             <select id="p-work" name="workId" aria-describedby="workId-error">
-              ${works.map((work) => html`<option value="${work.id}" data-grams="${work.estimatedG}" data-material="${work.materialId}">${work.title.it}</option>`)}
+              ${works.map((work) => html`<option value="${work.id}" data-colors="${JSON.stringify(colorsOf(work))}">${work.title.it}</option>`)}
             </select>
             ${errorSlot('workId')}
           </div>

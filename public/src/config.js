@@ -6,6 +6,8 @@ export const SITE = {
   owner: 'Lorenzo & Lorenzo',
   contactEmail: '', // se vuoto, il sito non mostra nessun indirizzo
   persistDays: 180,
+  // Scelte della home dall'area riservata: l'oggetto che si stampa scorrendo e quelli in evidenza (null = i primi quattro).
+  home: { hero: '', featured: null },
   data: {
     works: '/assets/data/works.json',
     materials: '/assets/data/materials.json',
@@ -29,6 +31,12 @@ export const SITE = {
 export function applySiteSettings(settings) {
   if (typeof settings?.name === 'string' && settings.name.trim()) SITE.name = settings.name.trim().slice(0, 40);
   if (typeof settings?.contactEmail === 'string') SITE.contactEmail = settings.contactEmail.trim().slice(0, 120);
+  if (settings?.home && typeof settings.home === 'object') {
+    SITE.home = {
+      hero: typeof settings.home.hero === 'string' ? settings.home.hero : '',
+      featured: Array.isArray(settings.home.featured) ? settings.home.featured.filter((id) => typeof id === 'string').slice(0, 4) : null,
+    };
+  }
 }
 
 export const NAV = Object.freeze([

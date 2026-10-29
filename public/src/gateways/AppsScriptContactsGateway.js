@@ -1,4 +1,4 @@
-import { fileToBase64 } from '../core/base64.js';
+import { base64ToBytes, fileToBase64 } from '../core/base64.js';
 import { ContactsError, ContactsGateway } from './ContactsGateway.js';
 
 const TIMEOUT_MS = 30_000;
@@ -48,6 +48,11 @@ export class AppsScriptContactsGateway extends ContactsGateway {
 
   async trashFile(fileId) {
     await this.#call({ action: 'trash', fileId });
+  }
+
+  async download(fileId) {
+    const result = await this.#call({ action: 'download', fileId }, UPLOAD_TIMEOUT_MS);
+    return { name: String(result.name ?? ''), bytes: base64ToBytes(result.data ?? '') };
   }
 
   async #call(body, timeout = TIMEOUT_MS) {

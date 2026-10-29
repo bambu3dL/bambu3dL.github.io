@@ -527,11 +527,16 @@
   .admin-row .gauge, .admin-row .btn, .admin-row .admin-tags { grid-column: 2; }
   .admin-row .btn { justify-self: start; }
   .admin-row-text { grid-template-columns: 1fr; }
+  .admin-row-work { grid-template-columns: auto minmax(0, 1fr); }
+  .admin-row-work .admin-tags, .admin-row-work .admin-row-actions { grid-column: 1 / -1; }
   .admin-bar { flex-wrap: wrap; }
   .admin-tabs { overflow: visible; }
   .admin-tabs ul { flex-wrap: wrap; }
 }
 
+.color-list { display: grid; gap: var(--s-2); }
+.color-stock { display: grid; gap: var(--s-4); }
+.color-stock-name { display: flex; align-items: center; margin-bottom: var(--s-1); font-weight: 600; }
 .work-photo { display: grid; gap: var(--s-2); margin: var(--s-5) 0 0; }
 .work-photo img { width: 100%; height: auto; border-radius: var(--radius-lg); background: var(--bg-raised); }
 .work-photo figcaption { font-size: var(--text-sm); color: var(--ink-dim); }
@@ -557,8 +562,33 @@
 .spool-group + .spool-group { margin-top: var(--s-4); }
 .spool-group-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
 .spool-none { padding-left: var(--s-2); }
+/* Elenco oggetti: pastiglie dei colori, frecce, scelte della home */
+@media (min-width: 40.0625rem) {
+  .admin-row-work { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+}
+.admin-row-work .swatches { margin: 0; }
+.btn-icon { min-width: 2.75rem; padding-inline: 0.6rem; font-size: 1.1rem; line-height: 1; }
+.btn-icon:disabled { opacity: 0.35; cursor: default; }
+.admin-tag.is-home { border-color: var(--signal); color: var(--ink); }
+.admin-featured-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--s-3); }
+.admin-featured-grid label { display: grid; gap: 0.3rem; font-size: var(--text-sm); }
+
+/* Modulo oggetto: fino a quattro colori e scelta del file dal Drive */
+.admin-colors { display: grid; gap: var(--s-3); }
+.admin-color-row { display: grid; grid-template-columns: minmax(0, 1fr) 7.5rem auto; gap: var(--s-3); align-items: end; }
+.admin-color-row[hidden] { display: none; }
+.admin-color-row label { display: grid; gap: 0.3rem; font-size: var(--text-sm); }
+.admin-colors-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+.admin-drive-pick { display: grid; justify-items: start; }
+.admin-picker { display: grid; gap: var(--s-3); width: 100%; margin-top: var(--s-3); padding: var(--s-4); border: 1px solid var(--line); border-radius: var(--radius); }
+.admin-picker[hidden] { display: none; }
+@media (max-width: 40rem) {
+  .admin-color-row { grid-template-columns: minmax(0, 1fr) 6rem; }
+  .admin-color-row .btn { grid-column: 1 / -1; justify-self: start; }
+}
+
 /* Anteprima del modello nel modulo di un oggetto */
-.admin-model { display: grid; gap: var(--s-4); }
+.admin-model { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
 .admin-model-frame { width: min(100%, 24rem); }
 .admin-model [data-model-stats] { white-space: pre-line; }
 .admin-row.is-finished { opacity: 0.6; }
