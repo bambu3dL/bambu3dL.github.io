@@ -257,6 +257,16 @@ export class CatalogAdmin {
     return { requestedG: Math.round(Number(grams)), takenG, shortfallG: left, beforeG, afterG: beforeG - takenG, parts };
   }
 
+  /** Scala dal magazzino dei grammi liberi (una prova, uno scarto, una stampa fuori vetrina), senza passare da un oggetto. */
+  async consumeGrams({ materialId, grams, reason = '' }) {
+    const errors = {};
+    if (!String(materialId ?? '').trim()) errors.materialId = 'missing';
+    const value = Number(grams);
+    if (grams === '' || grams === null || !Number.isFinite(value) || value < 1 || value > 100000) errors.grams = 'range';
+    if (Object.keys(errors).length) throw new ValidationError(errors);
+    return this.consume({ materialId, grams: Math.round(value), reason: String(reason ?? '').trim().slice(0, 120) || 'Grammi usati' });
+  }
+
   /** Scala dal magazzino il filamento stimato di un oggetto stampato `copies` volte. */
   async consumeForWork({ workId, copies = 1 }) {
     const work = (await this.#worksFile()).data.works.find((item) => item.id === workId);

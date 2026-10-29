@@ -46,6 +46,7 @@ export class AdminPage extends PrivateController {
     this.outlet.addEventListener('click', this.#onClick);
     this.outlet.addEventListener('submit', this.#onSubmit);
     this.outlet.addEventListener('change', this.#onChange);
+    this.outlet.addEventListener('input', this.#onInput);
     try {
       await this.show(context);
     } catch (error) {
@@ -150,6 +151,11 @@ export class AdminPage extends PrivateController {
     return this.deps.contacts.open(this.deps.session.adminKey);
   }
 
+  /** I file su Drive (stessa chiave e stesso script dei contatti). */
+  get files() {
+    return this.deps.contacts.openFiles(this.deps.session.adminKey);
+  }
+
   #fail(error) {
     this.draw(html`<section class="section admin-section"><p class="admin-state is-failed">${this.#message(error)}</p></section>`);
     if (error instanceof ContentError && error.code === 'auth') this.#report(error);
@@ -174,6 +180,10 @@ export class AdminPage extends PrivateController {
     await this.#guarded(() => this.onChange(event));
   };
 
+  #onInput = async (event) => {
+    await this.#guarded(() => this.onInput(event));
+  };
+
   async #guarded(work) {
     try {
       await work();
@@ -185,12 +195,14 @@ export class AdminPage extends PrivateController {
   onClick() {}
   onSubmit() {}
   onChange() {}
+  onInput() {}
 
   unmount() {
     this.#gone = true;
     this.outlet?.removeEventListener('click', this.#onClick);
     this.outlet?.removeEventListener('submit', this.#onSubmit);
     this.outlet?.removeEventListener('change', this.#onChange);
+    this.outlet?.removeEventListener('input', this.#onInput);
     super.unmount();
   }
 }

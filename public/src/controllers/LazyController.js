@@ -16,8 +16,10 @@ export class LazyController extends PageController {
     const create = await this.#load();
     if (this.#gone) return;
     this.#inner = create();
-    // Il titolo si conosce solo ora; il router lo legge dopo mount().
+    // Titolo e meta si conoscono solo ora; il router li legge dopo mount().
     this.titleKey = this.#inner.titleKey;
+    this.descriptionKey = this.#inner.descriptionKey;
+    this.noindex = this.#inner.noindex;
     await this.#inner.mount(context);
   }
 

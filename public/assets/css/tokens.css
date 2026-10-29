@@ -72,6 +72,15 @@
   --stage-text-shade: rgb(14 13 12 / 0.72);
   --plate: #2d261e;
   --plate-line: rgb(226 196 138 / 0.28);
+  /* I riquadri degli oggetti (miniature, scheda, campioni). Scuri col tema scuro, chiari col tema chiaro:
+     --plate resta sempre scuro perché sotto ci sono i testi chiari della chiusura di pagina. */
+  --tile: #2d261e;
+  --tile-line: rgb(226 196 138 / 0.28);
+  --tile-glow: rgb(255 255 255 / 0.1);
+  --tile-rim: rgb(255 255 255 / 0.06);
+  --tile-shade: rgb(0 0 0 / 0.65);
+  --tile-object-shadow: rgb(0 0 0 / 0.5);
+  --tile-stripe: rgb(255 255 255 / 0.06);
 }
 
 /* Di giorno: studio chiaro, luce diffusa. */
@@ -98,4 +107,11 @@
   --stage-text-shade: rgb(244 244 246 / 0.7);
   --plate: #2d261e;
   --plate-line: rgb(226 196 138 / 0.3);
+  --tile: #f3f1ed;
+  --tile-line: rgb(96 74 40 / 0.14);
+  --tile-glow: rgb(255 255 255 / 0.9);
+  --tile-rim: rgb(0 0 0 / 0.07);
+  --tile-shade: rgb(70 56 36 / 0.16);
+  --tile-object-shadow: rgb(60 46 28 / 0.32);
+  --tile-stripe: rgb(0 0 0 / 0.05);
 }

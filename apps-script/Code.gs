@@ -3,6 +3,10 @@
  * Riceve la richiesta dal sito, la ricontrolla, salva i file su Drive e scrive via Gmail a noi e al cliente.
  * Le istruzioni per metterlo in funzione sono in GUIDA-MESSA-ONLINE.md (parte 2).
  *
+ * La cartella radice su Drive (DRIVE_FOLDER_ID) raccoglie le cartelle delle richieste, una per cliente, e una "Libreria"
+ * per i file caricati da noi. Dall'area riservata, con la ADMIN_KEY, si elencano, si caricano e si mettono nel cestino.
+ * I clienti possono solo allegare file al modulo di contatto: non leggono né cancellano nulla.
+ *
  * Ogni richiesta finisce anche in un foglio Google privato (nel tuo Drive): da lì l'area riservata del sito la mostra,
  * ne cambia lo stato e la elimina, presentando la ADMIN_KEY. Nessun dato dei clienti sta nel repository pubblico.
  *
@@ -18,7 +22,10 @@ const LIMITS = {
   perEmailPerHour: 3,
   allPerHour: 30,
 };
-const EXTENSIONS = ['stl', '3mf', 'step', 'stp', 'obj', 'sldprt', 'sldasm', 'f3d', 'f3z', 'ipt', 'iam', '3dm'];
+const EXTENSIONS = [
+  'stl', '3mf', 'step', 'stp', 'iges', 'igs', 'obj', 'ply', 'amf', 'dwg', 'dxf',
+  'sldprt', 'sldasm', 'f3d', 'f3z', 'ipt', 'iam', '3dm', 'prt', 'x_t', 'x_b', 'sat', 'fcstd', 'skp',
+];
 const MODES = ['idea', 'file'];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const REFERENCE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -27,11 +34,13 @@ const TIME_ZONE = 'Europe/Rome';
 // Il foglio delle richieste: una riga per richiesta. L'ordine delle colonne è usato da rowToContact() e dagli aggiornamenti.
 const SHEET_NAME = 'Richieste';
 const SHEET_HEADERS = ['Riferimento', 'Ricevuta', 'Stato', 'Nome', 'Email', 'Si parte da', 'Materiale', 'Quantità', 'Entro quando', 'Oggetto', 'Lingua', 'Descrizione', 'File', 'Cartella Drive', 'Nota', 'Aggiornata'];
-const COL = { reference: 0, receivedAt: 1, status: 2, note: 14, updatedAt: 15 };
+const COL = { reference: 0, receivedAt: 1, status: 2, driveUrl: 13, note: 14, updatedAt: 15 };
 const CONTACT_STATUSES = ['received', 'reviewing', 'quoted', 'confirmed', 'printing', 'ready', 'closed'];
 const REFERENCE = /^Q-[A-Z2-9]{5}$/;
 const ADMIN_FAILS_PER_HOUR = 10;
 const MAX_LIST = 500;
+const LIBRARY_NAME = 'Libreria';
+const MAX_FILES_LISTED = 200;
 
 /* ---------- Punti d'ingresso ---------- */
 
@@ -159,6 +168,11 @@ function validate(p) {
 
   const files = Array.isArray(p.files) ? p.files : [];
   if (p.mode === 'file' && files.length === 0) return 'files';
+  return validateFiles(files);
+}
+
+/** Numero, formato e dimensione dei file: gli stessi limiti per il modulo e per il caricamento dall'area riservata. */
+function validateFiles(files) {
   if (files.length > LIMITS.maxFiles) return 'files_count';
   let total = 0;
   for (let i = 0; i < files.length; i++) {
@@ -301,6 +315,7 @@ function rowToContact(row) {
 function adminAction(p) {
   const refused = checkAdminKey(p.key);
   if (refused) return reply({ ok: false, error: refused });
+  if (p.action === 'files' || p.action === 'upload' || p.action === 'trash') return driveAction(p);
   const sheet = requestsSheet();
   if (!sheet) return reply({ ok: false, error: 'not_configured' });
   const values = sheet.getDataRange().getValues();
@@ -330,6 +345,113 @@ function adminAction(p) {
     return reply({ ok: true });
   }
   return reply({ ok: false, error: 'bad_request' });
+}
+
+/* ---------- File su Drive (area riservata) ---------- */
+
+function rootFolder() {
+  const id = PropertiesService.getScriptProperties().getProperty('DRIVE_FOLDER_ID');
+  return id ? DriveApp.getFolderById(id) : null;
+}
+
+/** La cartella "Libreria" dentro la radice: ci vanno i file caricati da noi che non riguardano una richiesta. La crea alla prima volta. */
+function libraryFolder(root) {
+  const props = PropertiesService.getScriptProperties();
+  const stored = props.getProperty('LIBRARY_FOLDER_ID');
+  if (stored) {
+    try {
+      const folder = DriveApp.getFolderById(stored);
+      if (!folder.isTrashed()) return folder;
+    } catch (error) { /* cancellata a mano: se ne crea una nuova */ }
+  }
+  const folder = root.createFolder(LIBRARY_NAME);
+  props.setProperty('LIBRARY_FOLDER_ID', folder.getId());
+  return folder;
+}
+
+/** Vero se `item` sta direttamente dentro `parentId`. */
+function isChildOf(item, parentId) {
+  const parents = item.getParents();
+  while (parents.hasNext()) {
+    if (parents.next().getId() === parentId) return true;
+  }
+  return false;
+}
+
+/** Si può toccare solo ciò che sta nella Libreria o nella cartella di una richiesta: mai il foglio né altro in Drive. */
+function isManagedFile(file, root) {
+  const parents = file.getParents();
+  while (parents.hasNext()) {
+    if (isChildOf(parents.next(), root.getId())) return true;
+  }
+  return false;
+}
+
+/** La cartella su cui agire: quella della richiesta `reference`, oppure la Libreria se non c'è. Restituisce { folder } o { error }. */
+function targetFolder(p, root) {
+  const reference = text(p.reference);
+  if (!reference) return { folder: libraryFolder(root), library: true };
+  if (!REFERENCE.test(reference)) return { error: 'bad_request' };
+  const sheet = requestsSheet();
+  if (!sheet) return { error: 'not_configured' };
+  const values = sheet.getDataRange().getValues();
+  for (let i = 1; i < values.length; i++) {
+    if (text(values[i][COL.reference]) !== reference) continue;
+    const match = /\/folders\/([A-Za-z0-9_-]+)/.exec(text(values[i][COL.driveUrl]));
+    if (!match) return { error: 'not_found' };
+    let folder;
+    try { folder = DriveApp.getFolderById(match[1]); } catch (error) { return { error: 'not_found' }; }
+    if (folder.isTrashed() || !isChildOf(folder, root.getId())) return { error: 'not_found' };
+    return { folder: folder, library: false };
+  }
+  return { error: 'not_found' };
+}
+
+function describeFiles(folder) {
+  const files = [];
+  const iterator = folder.getFiles();
+  let more = false;
+  while (iterator.hasNext()) {
+    const file = iterator.next();
+    if (files.length >= MAX_FILES_LISTED) { more = true; break; }
+    files.push({ id: file.getId(), name: file.getName(), size: file.getSize(), updatedAt: file.getLastUpdated().toISOString(), url: file.getUrl() });
+  }
+  files.sort(function (a, b) { return b.updatedAt.localeCompare(a.updatedAt); });
+  return { files: files, truncated: more };
+}
+
+function driveAction(p) {
+  const root = rootFolder();
+  if (!root) return reply({ ok: false, error: 'not_configured' });
+
+  if (p.action === 'trash') {
+    const id = text(p.fileId);
+    if (!/^[A-Za-z0-9_-]{10,}$/.test(id)) return reply({ ok: false, error: 'bad_request' });
+    let file;
+    try { file = DriveApp.getFileById(id); } catch (error) { return reply({ ok: false, error: 'not_found' }); }
+    if (!isManagedFile(file, root)) return reply({ ok: false, error: 'not_found' });
+    file.setTrashed(true); // nel cestino di Drive per 30 giorni: si può ripristinare da lì
+    return reply({ ok: true });
+  }
+
+  const target = targetFolder(p, root);
+  if (target.error) return reply({ ok: false, error: target.error });
+
+  if (p.action === 'files') {
+    const listing = describeFiles(target.folder);
+    return reply({ ok: true, folder: { name: target.folder.getName(), url: target.folder.getUrl(), library: target.library }, files: listing.files, truncated: listing.truncated });
+  }
+
+  // upload
+  const files = Array.isArray(p.files) ? p.files : [];
+  if (files.length === 0) return reply({ ok: false, error: 'files' });
+  const invalid = validateFiles(files);
+  if (invalid) return reply({ ok: false, error: invalid });
+  const saved = files.map(function (file) {
+    const created = target.folder.createFile(Utilities.newBlob(Utilities.base64Decode(file.data), 'application/octet-stream', safeName(file.name)));
+    return created.getName();
+  });
+  return reply({ ok: true, saved: saved });
 }
 
 /* ---------- Gmail ---------- */

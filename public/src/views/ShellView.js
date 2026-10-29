@@ -1,21 +1,13 @@
 import { html } from '../core/html.js';
 import { NAV, SITE } from '../config.js';
 import { icon } from './components/icons.js';
-
-function logo() {
-  // Il marchio sono tre strati di una stampa, sempre più larghi: la forma di un oggetto che nasce.
-  return html`<svg class="logo-mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
-    <rect x="12" y="6" width="16" height="7" rx="1.5" class="logo-top"/>
-    <rect x="7" y="16" width="26" height="7" rx="1.5" class="logo-mid"/>
-    <rect x="2" y="26" width="36" height="8" rx="1.5" class="logo-base"/>
-  </svg>`;
-}
+import { logoMark } from './components/logo.js';
 
 export function headerView({ t, lang, theme, path }) {
   const nextTheme = theme === 'dark' ? 'light' : 'dark';
   return html`<header class="site-header" data-site-header>
     <a class="brand" href="/" aria-label="${SITE.name} — ${t('nav.home')}">
-      ${logo()}
+      ${logoMark()}
       <span class="brand-text"><span class="brand-name">${SITE.name}</span><span class="brand-by">${t('brand.by', { owner: SITE.owner })}</span></span>
     </a>
     <nav class="site-nav" id="site-nav" aria-label="${t('a11y.mainNav')}">

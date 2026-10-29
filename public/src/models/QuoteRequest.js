@@ -3,7 +3,8 @@
 
 export const QUOTE_MODES = Object.freeze(['idea', 'file']);
 export const ACCEPTED_EXTENSIONS = Object.freeze([
-  'stl', '3mf', 'step', 'stp', 'obj', 'sldprt', 'sldasm', 'f3d', 'f3z', 'ipt', 'iam', '3dm',
+  'stl', '3mf', 'step', 'stp', 'iges', 'igs', 'obj', 'ply', 'amf', 'dwg', 'dxf',
+  'sldprt', 'sldasm', 'f3d', 'f3z', 'ipt', 'iam', '3dm', 'prt', 'x_t', 'x_b', 'sat', 'fcstd', 'skp',
 ]);
 // Limiti prudenti: i file viaggiano in un'unica richiesta verso Apps Script (apps-script/Code.gs ha gli stessi valori).
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -12,7 +13,7 @@ export const MAX_FILES = 5;
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-function extensionOf(name) {
+export function extensionOf(name) {
   const dot = String(name).lastIndexOf('.');
   return dot < 0 ? '' : String(name).slice(dot + 1).toLowerCase();
 }

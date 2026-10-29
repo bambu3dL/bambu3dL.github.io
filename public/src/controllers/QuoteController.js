@@ -5,6 +5,7 @@ import { asideChip, quoteSuccessView, quoteView } from '../views/QuoteView.js';
 
 export class QuoteController extends PageController {
   titleKey = 'title.quote';
+  descriptionKey = 'meta.quote';
   #deps;
   #outlet = null;
   #form = null;

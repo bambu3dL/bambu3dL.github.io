@@ -4,6 +4,7 @@ import { galleryView } from '../views/GalleryView.js';
 
 export class GalleryController extends PageController {
   titleKey = 'title.gallery';
+  descriptionKey = 'meta.gallery';
   #deps;
   #outlet = null;
   #family = 'all';

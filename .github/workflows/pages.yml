@@ -24,11 +24,21 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - id: pages
+        uses: actions/configure-pages@v5
+      # Si lavora sulla copia nella cartella di pubblicazione: il repository resta com'è.
+      - name: Prepara index.html
+        env:
+          BASE_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          # Gli indirizzi assoluti delle anteprime dei link (og:image, canonical) seguono il dominio vero, anche quando cambia.
+          sed -i "s|__SITE_URL__|${BASE_URL%/}|g" public/index.html
+          # Moduli precaricati in parallelo invece che a catena (vedi tools/preload.mjs).
+          node tools/preload.mjs public
       # GitHub Pages non riscrive le rotte: un indirizzo come /gallery darebbe 404. Con un 404.html uguale a
-      # index.html il sito si apre lo stesso e il router interno mostra la pagina giusta.
+      # index.html il sito si apre lo stesso e il router interno mostra la pagina giusta (e la pagina "non trovata").
       - name: Prepara 404.html
         run: cp public/index.html public/404.html
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public

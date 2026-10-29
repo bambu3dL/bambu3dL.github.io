@@ -93,9 +93,10 @@ Da quel momento, su quel dispositivo, basta la password. Per collegare un altro 
 |---|---|
 | **Panoramica** | Richieste da leggere, stato della pubblicazione, conteggi, fili da riordinare, scorciatoie |
 | **Contatti** | Le richieste arrivate dal modulo: elenco con filtro per stato, scheda con messaggio e file, risposta per email, stato (ricevuta, in valutazione, proposta inviata, confermata, in stampa, pronta, chiusa) e nota; eliminazione |
+| **File** | I modelli su Google Drive: scegli la **Libreria** (file tuoi) o la cartella di una richiesta, vedi i file (anche quelli che il cliente ha allegato dal modulo), **carichi** altri file (STL, 3MF, STEP, IGES, OBJ, DWG, DXF e altri CAD, fino a 5 alla volta) e puoi metterli nel **cestino** di Drive |
 | **Fili** | Il catalogo: famiglia (PLA, PETG…), colore, marca, peso nominale di una bobina. Alla creazione puoi aggiungere subito le bobine. Qui anche i testi delle famiglie |
-| **Bobine** | I pezzi fisici di ogni filo: aggiungi una bobina (nuova o iniziata), regola i grammi, segnala finita o riaprila, eliminala. **"Ho stampato un oggetto"** toglie i grammi stimati partendo dalla bobina più vecchia e passa alla successiva quando si svuota. Registro dei movimenti |
-| **Oggetti** | Le realizzazioni in vetrina: titoli e descrizioni IT/EN, filo, grammi, misure, forma 3D di esempio, **foto della stampa** (ridotta a 1600 px prima di caricarla), visibile o nascosto |
+| **Bobine** | I pezzi fisici di ogni filo: aggiungi una bobina (nuova o iniziata), regola i grammi, segnala finita o riaprila, eliminala. **"Ho stampato un oggetto"** toglie i grammi stimati partendo dalla bobina più vecchia e passa alla successiva quando si svuota. **"Ho usato dei grammi"** fa lo stesso scrivendo tu i grammi (una prova, uno scarto, una stampa fuori vetrina), senza scegliere un oggetto. Registro dei movimenti |
+| **Oggetti** | Le realizzazioni in vetrina: titoli e descrizioni IT/EN, filo, grammi, misure, forma 3D di esempio, **foto della stampa** (ridotta a 1400 px e compressa prima di caricarla, senza i dati nascosti come la posizione), visibile o nascosto |
 | **Impostazioni** | Nome del sito ed email di contatto; link alla cronologia delle modifiche |
 
 **Fili e bobine, in breve.** Un *filo* è una voce del catalogo ("PLA · Rosso lampone"); una *bobina* è un pezzo fisico di quel filo. Un filo può avere più bobine e il suo residuo è la somma di quelle in uso. Una bobina a zero grammi si chiude da sola; una bobina chiusa non conta nel residuo mostrato nel sito.
@@ -129,7 +130,7 @@ Sul tuo account Gmail. Non serve nulla sul PC.
 
 | Proprietà | Valore |
 |---|---|
-| `DRIVE_FOLDER_ID` | l'ID della cartella (messo da `inizializza`) |
+| `DRIVE_FOLDER_ID` | l'ID della cartella (messo da `inizializza`). Se preferisci una cartella tua già esistente, incolla qui il suo ID (la parte dopo `/folders/` nell'indirizzo): le richieste e la Libreria si creeranno lì dentro |
 | `SHEET_ID` | l'ID del foglio (messo da `inizializza`) |
 | `OWNER_EMAILS` | gli indirizzi che ricevono ogni messaggio, separati da virgola (se siete in due con due Gmail, scrivili entrambi) |
 | `SITE_NAME` | il nome che compare nelle email |
@@ -149,7 +150,13 @@ Sul tuo account Gmail. Non serve nulla sul PC.
 
 **8.10 Se modifichi `Code.gs`** (ad esempio dopo un aggiornamento del sito): non basta salvare. Incolla il nuovo codice, lancia di nuovo **`inizializza`** (è sicuro rilanciarlo: crea solo ciò che manca, ad esempio il foglio se è la prima volta), poi **Esegui il deployment → Gestisci i deployment** → matita → **Versione: Nuova versione**. L'URL non cambia. Google può chiedere di nuovo le autorizzazioni (il foglio richiede un permesso in più).
 
-**8.11 Se siete in due:** condividi la cartella "Stampe3D – richieste" e il foglio con l'altra Gmail, altrimenti l'altro Lorenzo riceve la mail ma non può aprire i file. Per usare la sezione Contatti anche dal suo dispositivo, serve la stessa chiave.
+**8.11 I file su Drive: chi può fare cosa.** La cartella è una sola e ha due ingressi, tutti e due dal sito:
+- **i clienti** possono solo **allegare** file al modulo di contatto (STL, 3MF, STEP, IGES, OBJ, DWG, DXF e altri CAD, al massimo 5 file, 25 MB ciascuno e 30 MB in tutto). Ogni richiesta ha la sua sottocartella; il cliente non vede né cancella nulla;
+- **tu** dalla sezione **File** dell'area riservata: elenchi, carichi e metti nel cestino. Si usa la stessa chiave dei contatti (passo 8.9), quindi non c'è altro da collegare.
+
+I file senza una richiesta vanno nella sottocartella **Libreria**, che lo script crea da sé la prima volta. Lo script non tocca mai altro in Drive (né il foglio né le tue cartelle): solo la Libreria e le cartelle delle richieste. "Sposta nel cestino" non cancella per sempre: da Drive lo ripristini entro 30 giorni. I link "Apri" si aprono su Drive e funzionano solo per gli account con cui la cartella è condivisa.
+
+**8.12 Se siete in due:** condividi la cartella "Stampe3D – richieste" e il foglio con l'altra Gmail, altrimenti l'altro Lorenzo riceve la mail ma non può aprire i file. Per usare la sezione Contatti anche dal suo dispositivo, serve la stessa chiave.
 
 **Da sapere:** una Gmail gratuita manda circa 100 destinatari al giorno (ogni messaggio ne usa 2 più un altro per ogni gestore). Il limite sui file (25 MB ciascuno, 30 MB in tutto) è prudente: fai una prova reale con un STL grande e, se fallisce, abbassalo in `Code.gs` **e** in `public/src/models/QuoteRequest.js`. Lo script ricontrolla tutto lato server, ammette al massimo 3 messaggi all'ora per indirizzo e blocca per un'ora la lettura dei contatti dopo 10 chiavi sbagliate. Nel foglio le celle sono in formato testo, così un cliente non può inserirci formule.
 
@@ -162,6 +169,7 @@ Sul tuo account Gmail. Non serve nulla sul PC.
 - [ ] Accesso su `/admin/login`; con la password sbagliata dice "Password non corretta."
 - [ ] Salvi una modifica di prova (ad esempio il nome in **Impostazioni**): dopo 1–2 minuti la vedi nel sito.
 - [ ] Il modulo di contatto invia con un file, arrivano le due email e la richiesta compare in **Contatti**.
+- [ ] In **File** carichi un STL di prova nella Libreria: compare nell'elenco e su Drive. Lo sposti nel cestino.
 - [ ] Cambi lo stato di una richiesta di prova e poi la elimini.
 - [ ] Salvato il token nel gestore di password.
 
@@ -196,6 +204,9 @@ Sul tuo account Gmail. Non serve nulla sul PC.
 | **Contatti**: "bloccato per un'ora" | Troppi tentativi con chiavi sbagliate | Aspetta un'ora, poi riprova con la chiave giusta |
 | **Contatti**: "Lo script non ha ancora il foglio o la chiave" | Mancano `SHEET_ID` o `ADMIN_KEY` | Rilancia `inizializza` e `creaChiaveAdmin` (passi 8.3 e 8.5), poi una nuova versione del deployment |
 | **Contatti**: la richiesta c'è su Drive e per email ma non nell'elenco | Il foglio non era ancora stato creato quando è arrivata | Aggiungila a mano nel foglio, oppure ignora: i file e le email ci sono comunque |
+| **File**: "Uno dei file ha un formato non ammesso" | Il formato non è nell'elenco (ad esempio un PDF o un ZIP) | Carica solo modelli e CAD; per altro usa Drive direttamente |
+| **File**: l'elenco o il caricamento non funzionano dopo un aggiornamento | Lo script ha ancora il vecchio codice | Incolla il nuovo `Code.gs` e fai una **nuova versione** del deployment (passo 8.10) |
+| **File**: "Questa richiesta o questo file non esiste più" | La cartella è stata spostata o cancellata su Drive | Aggiorna la pagina; se serve, ripristinala dal cestino di Drive |
 | Le email non arrivano | Quota Gmail, spam, o `OWNER_EMAILS` vuoto | Controlla lo spam e **Esecuzioni** |
 
 ## 12. Se il token finisce in mani sbagliate

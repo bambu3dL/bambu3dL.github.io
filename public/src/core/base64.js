@@ -14,6 +14,16 @@ export function base64ToBytes(text) {
   return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }
 
+/** Il contenuto di un File del browser in base64 (senza il prefisso "data:"). */
+export function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
 export function textToBase64(text) {
   return bytesToBase64(new TextEncoder().encode(text));
 }

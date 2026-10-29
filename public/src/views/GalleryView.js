@@ -41,7 +41,7 @@ export function workView({ t, lang, i18n, work, material, estimate, image, alter
             </div>
           </div>
           <p class="viewer-hint">${webgl ? t('work.viewerHint') : t('work.noWebgl')}</p>
-          ${work.photo ? html`<figure class="work-photo"><img src="${work.photo}" alt="${t('work.photoAlt', { title: work.title(lang) })}" loading="lazy"><figcaption>${t('work.photoCaption')}</figcaption></figure>` : ''}
+          ${work.photo ? html`<figure class="work-photo"><img src="${work.photo}" alt="${t('work.photoAlt', { title: work.title(lang) })}" loading="lazy" decoding="async"><figcaption>${t('work.photoCaption')}</figcaption></figure>` : ''}
         </div>
         <div class="work-info">
           <h1>${work.title(lang)}</h1>

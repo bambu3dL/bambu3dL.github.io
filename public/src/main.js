@@ -11,11 +11,7 @@ import { JsonWorksRepository } from './repositories/WorksRepository.js';
 import { JsonMaterialsRepository } from './repositories/MaterialsRepository.js';
 import { SimulatedQuoteGateway } from './gateways/SimulatedQuoteGateway.js';
 import { AppsScriptQuoteGateway } from './gateways/AppsScriptQuoteGateway.js';
-import { GitHubContentGateway } from './gateways/GitHubContentGateway.js';
-import { AppsScriptContactsGateway } from './gateways/AppsScriptContactsGateway.js';
-import { ContactsAdmin } from './services/ContactsAdmin.js';
-import { AdminSession } from './services/AdminSession.js';
-import { TokenVault } from './services/TokenVault.js';
+import { PageMeta } from './services/PageMeta.js';
 import { QuoteService } from './services/QuoteService.js';
 import { StockEstimator } from './services/StockEstimator.js';
 import { ThemeService } from './services/ThemeService.js';
@@ -42,6 +38,7 @@ const store = new PreferenceStore({ persistDays: SITE.persistDays });
 const i18n = new I18nService(store, { it, en });
 const theme = new ThemeService(store);
 const router = new Router();
+const pageMeta = new PageMeta();
 
 const deps = {
   i18n,
@@ -58,21 +55,41 @@ const deps = {
       ? new AppsScriptQuoteGateway({ endpoint: SITE.backend.quoteEndpoint })
       : new SimulatedQuoteGateway(),
   ),
-  session: new AdminSession({
-    vault: new TokenVault(),
-    createGateway: ({ repo, token }) => new GitHubContentGateway({ repo, token, root: SITE.github.root }),
-  }),
-  // Le richieste dei clienti: stanno dietro Apps Script, aperte con la chiave di questo dispositivo.
-  contacts: {
-    available: Boolean(SITE.backend.quoteEndpoint),
-    open: (key) => new ContactsAdmin(new AppsScriptContactsGateway({ endpoint: SITE.backend.quoteEndpoint, key })),
-  },
   navigate: (path, options) => router.navigate(path, options),
 };
 
+// Sessione e contatti dell'area riservata (token, cassaforte, Apps Script) si caricano e si collegano alla prima
+// pagina riservata che si apre: chi guarda solo il sito non ne scarica nemmeno una riga.
+let adminServices = null;
+function loadAdminServices() {
+  adminServices ??= Promise.all([
+    import('./gateways/GitHubContentGateway.js'),
+    import('./gateways/AppsScriptContactsGateway.js'),
+    import('./services/ContactsAdmin.js'),
+    import('./services/FilesAdmin.js'),
+    import('./services/AdminSession.js'),
+    import('./services/TokenVault.js'),
+  ]).then(([github, appsScript, contacts, files, session, vault]) => {
+    deps.session = new session.AdminSession({
+      vault: new vault.TokenVault(),
+      createGateway: ({ repo, token }) => new github.GitHubContentGateway({ repo, token, root: SITE.github.root }),
+    });
+    // Le richieste dei clienti: stanno dietro Apps Script, aperte con la chiave di questo dispositivo.
+    deps.contacts = {
+      available: Boolean(SITE.backend.quoteEndpoint),
+      open: (key) => new contacts.ContactsAdmin(new appsScript.AppsScriptContactsGateway({ endpoint: SITE.backend.quoteEndpoint, key })),
+      openFiles: (key) => new files.FilesAdmin(new appsScript.AppsScriptContactsGateway({ endpoint: SITE.backend.quoteEndpoint, key })),
+    };
+  }).catch((error) => {
+    adminServices = null; // un errore di rete non deve restare per sempre: la prossima apertura riprova
+    throw error;
+  });
+  return adminServices;
+}
+
 // Le pagine dell'area riservata si scaricano solo quando si aprono (vedi LazyController).
 const restricted = (name) => () => new LazyController(async () => {
-  const module = await import(`./controllers/${name}.js`);
+  const [module] = await Promise.all([import(`./controllers/${name}.js`), loadAdminServices()]);
   return () => new module[name](deps);
 });
 
@@ -81,22 +98,23 @@ router
   .add('/gallery', () => new GalleryController(deps))
   .add('/gallery/:id', () => new WorkController(deps))
   .add('/materials', () => new MaterialsController(deps))
-  .add('/how-it-works', () => new StaticController({ i18n, view: howView, titleKey: 'title.how' }))
+  .add('/how-it-works', () => new StaticController({ i18n, view: howView, titleKey: 'title.how', descriptionKey: 'meta.how' }))
   .add('/contact', () => new QuoteController(deps))
   .add('/quote', () => new QuoteController(deps)) // indirizzo di prima, ancora valido
-  .add('/about', () => new StaticController({ i18n, view: aboutView, titleKey: 'title.about' }))
-  .add('/privacy', () => new StaticController({ i18n, view: privacyView, titleKey: 'title.privacy' }))
+  .add('/about', () => new StaticController({ i18n, view: aboutView, titleKey: 'title.about', descriptionKey: 'meta.about' }))
+  .add('/privacy', () => new StaticController({ i18n, view: privacyView, titleKey: 'title.privacy', descriptionKey: 'meta.privacy' }))
   .add('/admin/login', restricted('LoginController'))
   .add('/admin', restricted('AdminOverviewController'))
   .add('/admin/contacts', restricted('AdminContactsController'))
   .add('/admin/contacts/:ref', restricted('AdminContactsController'))
+  .add('/admin/files', restricted('AdminFilesController'))
   .add('/admin/materials', restricted('AdminMaterialsController'))
   .add('/admin/materials/:id', restricted('AdminMaterialsController'))
   .add('/admin/works', restricted('AdminWorksController'))
   .add('/admin/works/:id', restricted('AdminWorksController'))
   .add('/admin/stock', restricted('AdminStockController'))
   .add('/admin/settings', restricted('AdminSettingsController'))
-  .setNotFound(() => new StaticController({ i18n, view: notFoundView, titleKey: 'title.notFound' }));
+  .setNotFound(() => new StaticController({ i18n, view: notFoundView, titleKey: 'title.notFound', descriptionKey: 'meta.notFound', noindex: true }));
 
 deps.timelapse.attach();
 
@@ -119,11 +137,19 @@ router.onChange(async ({ factory, params, url, scroll }) => {
   }
   if (ticket !== navigation) return;
   outlet.removeAttribute('aria-busy');
-  document.title = `${i18n.t(current.titleKey)} · ${SITE.name}`;
+  const title = `${current.heading ?? i18n.t(current.titleKey)} · ${SITE.name}`;
+  pageMeta.apply({
+    title,
+    description: current.summary ?? i18n.t(current.descriptionKey),
+    path: url.pathname,
+    lang: i18n.lang,
+    siteName: SITE.name,
+    noindex: current.noindex,
+  });
   if (scroll) {
     window.scrollTo(0, 0);
     outlet.focus({ preventScroll: true });
-    announce(document.title);
+    announce(title);
   }
 });
 

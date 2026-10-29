@@ -26,6 +26,7 @@ export default {
     about: 'Chi siamo',
     privacy: 'Privacy',
     notFound: 'Pagina non trovata',
+    adminFiles: 'File',
     adminContacts: 'Contatti',
     adminMaterials: 'Fili',
     adminWorks: 'Oggetti',
@@ -33,6 +34,18 @@ export default {
     adminSettings: 'Impostazioni',
     login: 'Accesso',
     admin: 'Area riservata',
+  },
+  // Le descrizioni che compaiono nei risultati di ricerca e nelle anteprime dei link (una per pagina, sotto i 160 caratteri).
+  meta: {
+    home: 'Stampe 3D su misura da due ragazzi che rispondono di persona. Parti da un’idea o da un file STL, 3MF o CAD e scrivici.',
+    gallery: 'Le realizzazioni: oggetti stampati in 3D su misura, con il filamento usato e i grammi che servono per rifarli.',
+    materials: 'I filamenti che usiamo, PLA, PETG e altri, con i colori disponibili e quanto ne abbiamo in magazzino.',
+    how: 'Come funziona: ci scrivi, guardiamo il file o l’idea, scegliamo insieme il materiale e stampiamo.',
+    quote: 'Scrivici per un oggetto su misura: racconta l’idea o allega il file e ti rispondiamo noi, di persona.',
+    about: 'Chi siamo: due ragazzi, entrambi Lorenzo, con le stampanti 3D e la voglia di far nascere oggetti strato dopo strato.',
+    privacy: 'Come trattiamo i dati che ci scrivi e cosa ricordiamo sul tuo dispositivo.',
+    notFound: 'Questa pagina non esiste o è stata spostata.',
+    admin: 'Area riservata.',
   },
   common: {
     estimated: 'stimati',
@@ -115,7 +128,7 @@ export default {
       file: {
         title: 'Da un file',
         text: 'Hai già il modello: lo controlliamo, ti diciamo cosa serve cambiare e stampiamo.',
-        formats: 'STL e 3MF; CAD da SolidWorks, Fusion, Inventor, Rhino.',
+        formats: 'STL e 3MF; CAD in STEP o IGES, da SolidWorks, Fusion, Inventor, Rhino, DWG e DXF.',
       },
     },
     gear: {
@@ -174,7 +187,7 @@ export default {
     },
     formats: [
       { name: 'STL, 3MF', text: 'Modelli pronti da stampare.' },
-      { name: 'STEP, OBJ', text: 'Scambio tra programmi CAD e di modellazione.' },
+      { name: 'STEP, IGES, OBJ', text: 'Scambio tra programmi CAD e di modellazione.' },
       { name: 'SolidWorks, Fusion, Inventor', text: 'File nativi: .sldprt, .sldasm, .f3d, .ipt, .iam.' },
       { name: 'Rhino', text: 'File .3dm.' },
     ],
@@ -301,5 +314,7 @@ export default {
     title: 'Questa pagina non c’è',
     text: 'Forse il link è sbagliato, o abbiamo spostato la pagina.',
     cta: 'Torna alla home',
+    gallery: 'Guarda le realizzazioni',
+    contact: 'Scrivici',
   },
 };

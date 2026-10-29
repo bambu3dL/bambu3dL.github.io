@@ -4,6 +4,7 @@ import { materialsView } from '../views/MaterialsView.js';
 
 export class MaterialsController extends PageController {
   titleKey = 'title.materials';
+  descriptionKey = 'meta.materials';
   #deps;
   #outlet = null;
   #selectedId = '';

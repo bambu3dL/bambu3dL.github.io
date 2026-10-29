@@ -1,5 +1,6 @@
 // Regole dei contenuti gestiti dall'area riservata: normalizzano e controllano ciò che arriva dai moduli.
 // Funzioni pure, senza DOM e senza rete. Gli errori sono { campo: codice }; le viste li traducono.
+import { ACCEPTED_EXTENSIONS, MAX_FILES, MAX_FILE_BYTES, MAX_TOTAL_BYTES, extensionOf } from './QuoteRequest.js';
 
 /** Le forme 3D che il sito sa disegnare, con i parametri regolabili (solo finché non ci sono modelli reali). */
 export const SHAPES = Object.freeze({
@@ -212,6 +213,17 @@ export function applyStockChange(current, { mode, grams }) {
   if (mode === 'set') return Math.max(0, value);
   if (mode === 'add') return Math.max(0, current + value);
   return Math.max(0, current - value);
+}
+
+/** I file da caricare su Drive dall'area riservata: stessi formati e limiti del modulo del sito. `files` ha { name, size }. */
+export function checkUploadFiles(files) {
+  const list = Array.from(files ?? []);
+  if (list.length === 0) return { files: 'filesNone' };
+  if (list.length > MAX_FILES) return { files: 'filesCount' };
+  if (list.some((file) => !ACCEPTED_EXTENSIONS.includes(extensionOf(file.name)))) return { files: 'filesType' };
+  if (list.some((file) => file.size > MAX_FILE_BYTES)) return { files: 'filesSize' };
+  if (list.reduce((sum, file) => sum + file.size, 0) > MAX_TOTAL_BYTES) return { files: 'filesTotal' };
+  return {};
 }
 
 export function checkSettings(input) {

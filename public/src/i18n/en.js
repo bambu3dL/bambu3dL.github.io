@@ -26,6 +26,7 @@ export default {
     about: 'About us',
     privacy: 'Privacy',
     notFound: 'Page not found',
+    adminFiles: 'Files',
     adminContacts: 'Contacts',
     adminMaterials: 'Filaments',
     adminWorks: 'Objects',
@@ -33,6 +34,18 @@ export default {
     adminSettings: 'Settings',
     login: 'Sign in',
     admin: 'Admin area',
+  },
+  // The descriptions shown in search results and link previews (one per page, under 160 characters).
+  meta: {
+    home: 'Custom 3D printing by two guys who answer in person. Start from an idea or an STL, 3MF or CAD file and write to us.',
+    gallery: 'Our work: custom 3D-printed objects, with the filament used and the grams it takes to make them again.',
+    materials: 'The filaments we use, PLA, PETG and more, with the colours available and how much we have in stock.',
+    how: 'How it works: you write to us, we look at the file or the idea, choose the material together and print.',
+    quote: 'Write to us about a custom object: tell us the idea or attach the file and we’ll answer in person.',
+    about: 'About us: two guys, both called Lorenzo, with 3D printers and a taste for making objects layer by layer.',
+    privacy: 'How we handle the data you send us and what we remember on your device.',
+    notFound: 'This page doesn’t exist or has moved.',
+    admin: 'Admin area.',
   },
   common: {
     estimated: 'estimated',
@@ -115,7 +128,7 @@ export default {
       file: {
         title: 'From a file',
         text: 'You already have the model: we check it, tell you what needs changing and print it.',
-        formats: 'STL and 3MF; CAD from SolidWorks, Fusion, Inventor, Rhino.',
+        formats: 'STL and 3MF; CAD as STEP or IGES, from SolidWorks, Fusion, Inventor, Rhino, DWG and DXF.',
       },
     },
     gear: {
@@ -174,7 +187,7 @@ export default {
     },
     formats: [
       { name: 'STL, 3MF', text: 'Models ready to print.' },
-      { name: 'STEP, OBJ', text: 'Exchange between CAD and modelling programs.' },
+      { name: 'STEP, IGES, OBJ', text: 'Exchange between CAD and modelling programs.' },
       { name: 'SolidWorks, Fusion, Inventor', text: 'Native files: .sldprt, .sldasm, .f3d, .ipt, .iam.' },
       { name: 'Rhino', text: '.3dm files.' },
     ],
@@ -301,5 +314,7 @@ export default {
     title: 'This page isn’t here',
     text: 'The link may be wrong, or we moved the page.',
     cta: 'Back to the home page',
+    gallery: 'See our work',
+    contact: 'Get in touch',
   },
 };

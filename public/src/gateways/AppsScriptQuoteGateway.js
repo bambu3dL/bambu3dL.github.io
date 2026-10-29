@@ -1,15 +1,7 @@
+import { fileToBase64 } from '../core/base64.js';
 import { QuoteGateway } from './QuoteGateway.js';
 
 const TIMEOUT_MS = 120_000;
-
-function toBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
 
 // Invia la richiesta all'app web di Google Apps Script (apps-script/Code.gs), che salva i file su Drive
 // e scrive via Gmail a noi e al cliente. Ogni errore diventa un'eccezione: QuoteService lo trasforma in "riprova".
@@ -22,7 +14,7 @@ export class AppsScriptQuoteGateway extends QuoteGateway {
   }
 
   async submit(request) {
-    const files = await Promise.all(request.files.map(async (file) => ({ name: file.name, data: await toBase64(file) })));
+    const files = await Promise.all(request.files.map(async (file) => ({ name: file.name, data: await fileToBase64(file) })));
     const payload = {
       mode: request.mode,
       name: request.name,

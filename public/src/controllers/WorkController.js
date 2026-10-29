@@ -6,6 +6,7 @@ import { webglSupported } from '../three/support.js';
 
 export class WorkController extends PageController {
   titleKey = 'title.gallery';
+  descriptionKey = 'meta.gallery';
   #deps;
   #viewer = null;
 
@@ -21,8 +22,14 @@ export class WorkController extends PageController {
     const material = work ? allMaterials.find((item) => item.id === work.materialId) : null;
     if (!work || !material) {
       renderInto(outlet, notFoundView({ t }));
+      this.titleKey = 'title.notFound';
+      this.descriptionKey = 'meta.notFound';
+      this.noindex = true;
       return;
     }
+    // Ogni realizzazione ha il suo titolo e la sua descrizione, per i risultati di ricerca e le anteprime.
+    this.heading = work.title(i18n.lang);
+    this.summary = work.summary(i18n.lang);
 
     const webgl = webglSupported();
     renderInto(outlet, workView({

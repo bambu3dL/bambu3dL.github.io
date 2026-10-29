@@ -3,8 +3,10 @@ import { bytesToBase64 } from './base64.js';
 /**
  * Riduce una foto a un JPEG con il lato lungo al massimo `maxSide` pixel e lo restituisce in base64,
  * pronta da caricare nel repository. Lancia se il file non è un'immagine leggibile.
+ * Il passaggio dal canvas toglie anche i metadati (posizione GPS, modello del telefono): nel repository pubblico non finiscono.
+ * 1400 px a qualità 0.8 bastano per la pagina di una realizzazione e pesano circa un terzo in meno di 1600 px a 0.85.
  */
-export async function resizeToJpeg(file, { maxSide = 1600, quality = 0.85 } = {}) {
+export async function resizeToJpeg(file, { maxSide = 1400, quality = 0.8 } = {}) {
   const bitmap = await createImageBitmap(file);
   try {
     const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));

@@ -46,8 +46,28 @@ export class AdminStockController extends AdminPage {
       .replace('{material}', this.#label(option.dataset.material));
   }
 
+  /** Dice in anticipo quanto resterebbe del filo dopo i grammi scritti. */
+  #updateUsedPreview() {
+    const form = this.outlet.querySelector('[data-used-form]');
+    const target = this.outlet.querySelector('[data-used-preview]');
+    if (!form || !target) return;
+    const option = form.elements.materialId?.selectedOptions[0];
+    const value = Math.round(Number(form.elements.grams.value));
+    if (!option || form.elements.grams.value === '' || !Number.isFinite(value) || value < 1) {
+      target.textContent = '';
+      return;
+    }
+    const stock = Number(option.dataset.stock);
+    target.textContent = A.stock.used.left.replace('{grams}', fmt(stock)).replace('{after}', fmt(Math.max(0, stock - value)));
+  }
+
+  onInput(event) {
+    if (event.target.closest('[data-used-form]')) this.#updateUsedPreview();
+  }
+
   onChange(event) {
     if (event.target.closest('[data-printed-form]')) this.#updatePreview();
+    if (event.target.closest('[data-used-form]')) this.#updateUsedPreview();
     if (event.target.matches('#a-material')) {
       // Il peso proposto per una bobina nuova è quello nominale del filo scelto.
       const form = event.target.form;
@@ -82,6 +102,7 @@ export class AdminStockController extends AdminPage {
   async onSubmit(event) {
     const form = event.target;
     if (form.matches('[data-printed-form]')) await this.#printed(form);
+    else if (form.matches('[data-used-form]')) await this.#used(form);
     else if (form.matches('[data-add-spool-form]')) await this.#addSpool(form);
     else if (form.matches('[data-move-form]')) await this.#move(form);
   }
@@ -95,6 +116,19 @@ export class AdminStockController extends AdminPage {
     if (!ok) return;
     await this.show(this.context);
     const label = this.#label(materialId);
+    this.flash(result.shortfallG > 0
+      ? A.stock.printed.short.replace('{taken}', fmt(result.takenG)).replace('{material}', label).replace('{grams}', fmt(result.requestedG)).replace('{short}', fmt(result.shortfallG))
+      : A.stock.printed.done.replace('{grams}', fmt(result.takenG)).replace('{material}', label).replace('{after}', fmt(result.afterG)),
+    result.shortfallG > 0 ? 'error' : 'ok');
+  }
+
+  async #used(form) {
+    const values = formValues(form);
+    let result;
+    const ok = await this.run(form, async () => { result = await this.catalog.consumeGrams({ materialId: values.materialId, grams: values.grams, reason: values.reason }); });
+    if (!ok) return;
+    await this.show(this.context);
+    const label = this.#label(values.materialId);
     this.flash(result.shortfallG > 0
       ? A.stock.printed.short.replace('{taken}', fmt(result.takenG)).replace('{material}', label).replace('{grams}', fmt(result.requestedG)).replace('{short}', fmt(result.shortfallG))
       : A.stock.printed.done.replace('{grams}', fmt(result.takenG)).replace('{material}', label).replace('{after}', fmt(result.afterG)),

@@ -6,11 +6,13 @@ export class StaticController extends PageController {
   #i18n;
   #view;
 
-  constructor({ i18n, view, titleKey }) {
+  constructor({ i18n, view, titleKey, descriptionKey, noindex = false }) {
     super();
     this.#i18n = i18n;
     this.#view = view;
     this.titleKey = titleKey;
+    this.descriptionKey = descriptionKey;
+    this.noindex = noindex;
   }
 
   async mount({ outlet }) {

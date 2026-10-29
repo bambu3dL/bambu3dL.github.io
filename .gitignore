@@ -1,1 +1,12 @@
 node_modules/
+
+# Mai nel repository (che è pubblico): chiavi, token e credenziali. Il token dell'area riservata vive cifrato nel browser,
+# la chiave dei contatti nelle proprietà dello script Google; nessuno dei due ha un file.
+.env
+.env.*
+*.key
+*.pem
+*.pfx
+*.p12
+*credentials*.json
+*secret*.json

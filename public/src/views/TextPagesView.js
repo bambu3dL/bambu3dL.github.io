@@ -1,5 +1,6 @@
 import { html } from '../core/html.js';
 import { icon } from './components/icons.js';
+import { logoMark } from './components/logo.js';
 
 export function aboutView({ t, i18n }) {
   return html`
@@ -42,8 +43,14 @@ export function privacyView({ t, i18n }) {
 export function notFoundView({ t }) {
   return html`
     <section class="page-head not-found">
+      ${logoMark('logo-mark not-found-logo')}
+      <p class="not-found-code" aria-hidden="true">404</p>
       <h1>${t('notFound.title')}</h1>
       <p class="lead">${t('notFound.text')}</p>
-      <a class="btn btn-primary" href="/">${t('notFound.cta')}${icon('arrow')}</a>
+      <div class="not-found-actions">
+        <a class="btn btn-primary" href="/">${t('notFound.cta')}${icon('arrow')}</a>
+        <a class="btn btn-ghost" href="/gallery">${t('notFound.gallery')}</a>
+        <a class="btn btn-ghost" href="/contact">${t('notFound.contact')}</a>
+      </div>
     </section>`;
 }

@@ -315,6 +315,31 @@ export function stockView({ materials, spools, works, log, pickedSpool }) {
           <div class="form-actions"><button class="btn btn-primary" type="submit" data-submit>${A.stock.printed.submit}</button></div>`}
       </form>
 
+      <form class="admin-form" data-used-form novalidate>
+        <h2>${A.stock.used.title}</h2>
+        <p class="muted">${A.stock.used.lead}</p>
+        ${materials.length === 0 ? html`<p class="muted">${A.stock.used.none}</p>` : html`
+          <div class="field">
+            <label for="u-material">${A.stock.used.material}</label>
+            <select id="u-material" name="materialId" aria-describedby="materialId-error">
+              ${materials.map((material) => html`<option value="${material.id}" data-stock="${filamentStats(material, spools).stockG}">${materialLabel(material)} — ${grams(filamentStats(material, spools).stockG)}</option>`)}
+            </select>
+            ${errorSlot('materialId')}
+          </div>
+          <div class="field">
+            <label for="u-grams">${A.stock.used.grams}</label>
+            <input id="u-grams" name="grams" type="number" min="1" max="100000" step="1" inputmode="numeric" aria-describedby="grams-error">
+            ${errorSlot('grams')}
+          </div>
+          <div class="field">
+            <label for="u-reason">${A.stock.used.reason} (${A.common.optional})</label>
+            <input id="u-reason" name="reason" type="text" maxlength="120" aria-describedby="u-reason-hint">
+            <p class="field-hint" id="u-reason-hint">${A.stock.used.reasonHint}</p>
+          </div>
+          <p class="admin-fixed" data-used-preview aria-live="polite"></p>
+          <div class="form-actions"><button class="btn btn-primary" type="submit" data-submit>${A.stock.used.submit}</button></div>`}
+      </form>
+
       <form class="admin-form" data-add-spool-form novalidate>
         <h2>${A.stock.add.title}</h2>
         ${materials.length === 0 ? html`<p class="muted">${A.stock.add.none}</p>` : html`

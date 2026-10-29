@@ -100,6 +100,7 @@ export function contactDetailView({ contact }) {
       <p class="lead">${contact.reference} · ${A.contacts.detail.received.toLowerCase()} ${when(contact.receivedAt)}</p>
       <div class="admin-actions">
         ${reply ? html`<a class="btn btn-primary" href="${reply}">${A.contacts.detail.reply}</a>` : ''}
+        ${drive ? html`<a class="btn btn-ghost" href="/admin/files?ref=${encodeURIComponent(contact.reference)}">${A.contacts.detail.filesPage}</a>` : ''}
         ${drive ? html`<a class="btn btn-ghost" href="${drive}" target="_blank" rel="noopener" data-external>${A.contacts.detail.openDrive}</a>` : ''}
       </div>
     </section>

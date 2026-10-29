@@ -5,6 +5,7 @@ import { stockGauge } from './components/parts.js';
 const SECTIONS = Object.freeze([
   ['overview', '/admin'],
   ['contacts', '/admin/contacts'],
+  ['files', '/admin/files'],
   ['materials', '/admin/materials'],
   ['stock', '/admin/stock'],
   ['works', '/admin/works'],

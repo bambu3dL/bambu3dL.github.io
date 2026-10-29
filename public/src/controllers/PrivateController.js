@@ -1,19 +1,7 @@
 import { PageController } from './PageController.js';
 
-// Pagine riservate: finché sono aperte dicono ai motori di ricerca di non indicizzarle.
-// Chi estende deve chiamare super.mount() e super.unmount().
+// Pagine riservate: dicono ai motori di ricerca di non indicizzarle (il meta tag lo scrive PageMeta).
 export class PrivateController extends PageController {
-  #meta = null;
-
-  async mount() {
-    this.#meta = document.createElement('meta');
-    this.#meta.name = 'robots';
-    this.#meta.content = 'noindex, nofollow';
-    document.head.append(this.#meta);
-  }
-
-  unmount() {
-    this.#meta?.remove();
-    this.#meta = null;
-  }
+  descriptionKey = 'meta.admin';
+  noindex = true;
 }
