@@ -48,8 +48,7 @@
       "summary": {
         "it": "Modalità vaso: una sola parete continua che si torce mentre sale.",
         "en": "Vase mode: a single continuous wall that twists as it climbs."
-      },
-      "visible": false
+      }
     },
     {
       "id": "nido-ape",
