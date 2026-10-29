@@ -37,7 +37,11 @@ import { createPrintMaterial } from './PrintMaterial.js';
 
 const DEG = Math.PI / 180;
 const PLATE = 25.6; // piatto 256 x 256 mm
-const VASE_HEIGHT = 16;
+// L'oggetto si ingrandisce finché la sua impronta occupa questa quota del lato del piatto (poi non supera l'altezza utile della macchina).
+const FOOTPRINT_SHARE = 0.75;
+const MAX_PRINT_HEIGHT = 25.6;
+// L'altezza di riferimento con cui sono tarati camera e luci: con oggetti più alti o più bassi si scalano insieme.
+const REFERENCE_HEIGHT = 16;
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
 const lerp = (a, b, t) => a + (b - a) * t;
 const smooth = (t) => t * t * (3 - 2 * t);
@@ -133,6 +137,8 @@ export class BedScene {
   #camera = new PerspectiveCamera(30, 1, 0.1, 500);
   #world = new Group();
   #vase;
+  #printScale = 1; // da unità normalizzate della geometria a centimetri nella scena
+  #printHeight = REFERENCE_HEIGHT;
   #plane = new Plane();
   #toolhead = new Group();
   #glow;
@@ -245,8 +251,13 @@ export class BedScene {
     material.clippingPlanes = [this.#plane];
     material.roughness = 0.4;
     this.#vase = new Mesh(this.#geometry, material);
-    this.#vase.scale.setScalar(VASE_HEIGHT / spanY);
-    this.#vase.position.y = -minY * (VASE_HEIGHT / spanY);
+    // Impronta a terra (il lato maggiore tra larghezza e profondità) = 75% del piatto; il resto cresce in proporzione.
+    const { boundingBox } = this.#geometry;
+    const footprint = Math.max(boundingBox.max.x - boundingBox.min.x, boundingBox.max.z - boundingBox.min.z, 1e-6);
+    this.#printScale = Math.min((PLATE * FOOTPRINT_SHARE) / footprint, MAX_PRINT_HEIGHT / spanY);
+    this.#printHeight = spanY * this.#printScale;
+    this.#vase.scale.setScalar(this.#printScale);
+    this.#vase.position.y = -minY * this.#printScale;
     this.#vase.castShadow = true;
     this.#vase.receiveShadow = true;
     this.#world.add(this.#vase);
@@ -316,7 +327,9 @@ export class BedScene {
    * @param {number} q quanto la camera si è allontanata alla fine (0..1)
    */
   render(t, q) {
-    const y = VASE_HEIGHT * t;
+    const y = this.#printHeight * t;
+    // Camera e luci sono tarate su un oggetto alto 16 cm: un oggetto più alto o più basso sposta tutto in proporzione.
+    const k = Math.max(0.6, this.#printHeight / REFERENCE_HEIGHT);
 
     // L'ugello gira lungo la parete del vaso: la modalità vaso è una sola spirale continua.
     const angle = t * Math.PI * 2 * 150;
@@ -324,11 +337,11 @@ export class BedScene {
     // Con il contorno il raggio è già nelle unità normalizzate e centrato sull'asse; con la formula del vaso no.
     const raw = this.#outline ? this.#outline(t, angle) : vaseRadius(this.#shape, t, angle);
     const [originX, originZ, divisor] = this.#outline ? [0, 0, 1] : [center[0], center[2], extent];
-    const scale = VASE_HEIGHT / this.#geometry.userData.spanY;
+    const scale = this.#printScale;
     const tipX = ((Math.cos(angle) * raw - originX) / divisor) * scale;
     const tipZ = ((Math.sin(angle) * raw - originZ) / divisor) * scale;
     const tip = new Vector3(tipX, y + 0.12, tipZ);
-    const parked = new Vector3(13, VASE_HEIGHT + 9, -3);
+    const parked = new Vector3(13 * k, this.#printHeight + 9, -3);
     tip.lerp(parked, smooth(q));
     this.#toolhead.position.copy(tip);
     this.#tipLight.position.set(tip.x, tip.y + 0.5, tip.z);
@@ -342,8 +355,8 @@ export class BedScene {
     const azimuth = lerp(16, 46, t) + pull * 12;
     const elevation = lerp(8, 15, t) + pull * 9;
     const aspectFit = (2 * Math.max(0.5, raw) * scale * 1.35) / (Math.min(1, this.#aspect) * 2 * Math.tan(15 * DEG));
-    const distance = Math.max(lerp(14.5, 25, t), aspectFit) + pull * 18;
-    const lookY = lerp(lerp(2.2, y * 0.82 + 1.2, clamp01(t * 1.2)), VASE_HEIGHT * 0.55, pull);
+    const distance = Math.max(lerp(14.5, 25, t) * k, aspectFit) + pull * 18 * k;
+    const lookY = lerp(lerp(2.2, y * 0.82 + 1.2, clamp01(t * 1.2)), this.#printHeight * 0.55, pull);
     this.#lookAt.set(0, lookY, 0);
     const a = azimuth * DEG;
     const e = elevation * DEG;
