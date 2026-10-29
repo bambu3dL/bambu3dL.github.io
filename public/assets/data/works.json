@@ -78,6 +78,29 @@
       }
     },
     {
+      "id": "escher",
+      "date": "2026-10-29",
+      "shape": {
+        "kind": "model",
+        "url": "assets/models/escher-mvu1ychz.s3dm"
+      },
+      "materialId": "pla-girasole",
+      "estimatedG": 6,
+      "dimensionsMm": [
+        23,
+        18,
+        9
+      ],
+      "title": {
+        "it": "Escher",
+        "en": "Escher"
+      },
+      "summary": {
+        "it": "Scopri il keycap “Esc – Edizione Escher”, un innovativo modello 3D progettato per tastiere meccaniche con switch standard Cherry MX. Questo esclusivo design non è solo un componente funzionale, ma una vera dichiarazione di stile. Il tasto “Esc” è reinterpretato con l'iscrizione “Escher”, un omaggio all'ironia arguta e intelligente dei celebri comici Aldo, Giovanni e Giacomo. Realizzato con precisione per garantire una perfetta installazione e una durata senza compromessi, questo keycap è pensato per chi apprezza lo stile nei dettagli e non teme di esprimere la propria personalità. Se cerchi un accessorio che fonde innovazione tecnica e un tocco di spirito anticonformista, questo modello è la scelta ideale.",
+        "en": "Introducing the “Esc – Escher Edition” keycap, a cutting-edge 3D model designed for mechanical keyboards featuring Cherry MX switches. This design isn’t just about functionality—it’s a statement piece. The “Esc” key is reimagined with the inscription \"Escher,\" paying tribute to the sharp and witty humor of the renowned comedians Aldo, Giovanni, and Giacomo. Engineered with precision to ensure a perfect fit and uncompromising durability, this keycap is meant for those who believe true style is found in the details and aren't afraid to express their individuality. If you’re looking for an accessory that fuses technical innovation with a bold, nonconformist spirit, this model is for you."
+      }
+    },
+    {
       "id": "vaso-onda",
       "date": "2026-09-14",
       "shape": {
@@ -102,29 +125,6 @@
       "summary": {
         "it": "Tre lobi larghi che girano piano, in PETG per sopportare l'acqua.",
         "en": "Three broad lobes turning slowly, in PETG to cope with water."
-      }
-    },
-    {
-      "id": "escher",
-      "date": "2026-10-29",
-      "shape": {
-        "kind": "model",
-        "url": "assets/models/escher-mvu1ychz.s3dm"
-      },
-      "materialId": "pla-girasole",
-      "estimatedG": 6,
-      "dimensionsMm": [
-        23,
-        18,
-        9
-      ],
-      "title": {
-        "it": "Escher",
-        "en": "Escher"
-      },
-      "summary": {
-        "it": "Scopri il keycap “Esc – Edizione Escher”, un innovativo modello 3D progettato per tastiere meccaniche con switch standard Cherry MX. Questo esclusivo design non è solo un componente funzionale, ma una vera dichiarazione di stile. Il tasto “Esc” è reinterpretato con l'iscrizione “Escher”, un omaggio all'ironia arguta e intelligente dei celebri comici Aldo, Giovanni e Giacomo. Realizzato con precisione per garantire una perfetta installazione e una durata senza compromessi, questo keycap è pensato per chi apprezza lo stile nei dettagli e non teme di esprimere la propria personalità. Se cerchi un accessorio che fonde innovazione tecnica e un tocco di spirito anticonformista, questo modello è la scelta ideale.",
-        "en": "Introducing the “Esc – Escher Edition” keycap, a cutting-edge 3D model designed for mechanical keyboards featuring Cherry MX switches. This design isn’t just about functionality—it’s a statement piece. The “Esc” key is reimagined with the inscription \"Escher,\" paying tribute to the sharp and witty humor of the renowned comedians Aldo, Giovanni, and Giacomo. Engineered with precision to ensure a perfect fit and uncompromising durability, this keycap is meant for those who believe true style is found in the details and aren't afraid to express their individuality. If you’re looking for an accessory that fuses technical innovation with a bold, nonconformist spirit, this model is for you."
       }
     },
     {
